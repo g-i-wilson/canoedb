@@ -2,7 +2,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import canoedb.*;
+import io.github.gabrielwilson3.canoedb.*;
 
 public class CanoeDB {
 
