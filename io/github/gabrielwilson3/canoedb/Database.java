@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 import java.io.File;
 import java.util.*;
 
+
 public class Database {
 	
 	Map<String, Table> tableMap = new HashMap<>();
