@@ -52,7 +52,7 @@ import java.util.*;
 import java.io.*;
 import java.net.*;
 
-import canoedb.*;
+import io.github.gabrielwilson3.canoedb.*;
 
 // A Webserver waits for clients to connect, then starts a separate
 // thread to handle the request.
