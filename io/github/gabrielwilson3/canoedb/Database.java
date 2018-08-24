@@ -1,4 +1,4 @@
-package io.github.gabrielwilson3;
+package io.github.gabrielwilson3.canoedb;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
