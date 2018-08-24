@@ -1,4 +1,4 @@
-package package io.github.gabrielwilson3.canoedb;
+package io.github.gabrielwilson3.canoedb;
 
 import java.io.*;
 import java.nio.file.*;

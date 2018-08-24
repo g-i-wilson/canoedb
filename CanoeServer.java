@@ -52,17 +52,20 @@ import java.util.*;
 import java.io.*;
 import java.net.*;
 
-import io.github.gabrielwilson3.canoedb.*;
+import canoedb.*;
 
 // A Webserver waits for clients to connect, then starts a separate
 // thread to handle the request.
 public class CanoeServer {
   private static ServerSocket serverSocket;
   
-  Database d;
+  Database databases;
+  int port;
 
   public static void main(String[] args) throws IOException {
-	  
+	
+	database 	= args.length > 0 ? new Database( args[0] ) : System.getProperty("user.dir");
+	port 		= args.length > 1 ? args[1] : 
 	  
     serverSocket=new ServerSocket(80);  // Start, listen on port 80
     while (true) {
@@ -82,7 +85,7 @@ class ClientHandler extends Thread {
   private Socket socket;  // The accepted socket from the Webserver
 
   // Start the thread in the constructor
-  public ClientHandler(Socket s, Database d) {
+  public ClientHandler(Socket s, Database d, int port) {
     socket=s;
     start();
   }
