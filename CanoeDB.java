@@ -8,7 +8,7 @@ public class CanoeDB {
 
 	public static void main(String[] args)
 	{
-		Database d = new Database("C:\\Users\\1404844039C\\Documents\\JavaProjects\\TestDB_Wagons");
+		Database d = new Database( args[0] );
 
 		Query q = new Query( d );
 		
