@@ -1,4 +1,4 @@
-package canoedb;
+package io.github.gabrielwilson3;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
