@@ -12,14 +12,16 @@ public class Query {
 	// row_str -> table -> column -> data
 	Map<String, Map<String, Map<String, String>>> outputMap = new HashMap<>();
 	
-	// filter
+	// input
 	// table -> column -> data
-	Map<String, Map<String, String>> filterMap = new HashMap<> ();
+	Map<String, Map<String, String>> inputMap = new HashMap<> ();
 	
 	// database object
 	Database dbObject;
 	
 
+	public Query () {}
+	
 	public Query (Database db) {
 		dbObject = db;
 	}
@@ -49,10 +51,10 @@ public class Query {
 		return this;
 	}
 	
-	// Add a filter
-	public Query filter (String table, String column, String data) {
-		filterMap.put( table, new HashMap<String, String>() );
-		filterMap.get( table ).put( column, data );
+	// Add an input
+	public Query input (String table, String column, String data) {
+		inputMap.put( table, new HashMap<String, String>() );
+		inputMap.get( table ).put( column, data );
 		return this;
 	}
 	
@@ -60,11 +62,11 @@ public class Query {
 	// ask that TableRow to populate outputTemplate
 	public Map<String, Map<String, Map<String, String>>> execute() {
 		// loop through tables
-		for (String table : filterMap.keySet()) {
+		for (String table : inputMap.keySet()) {
 			// loop through columns
-			for (String column : filterMap.get(table).keySet()) {
+			for (String column : inputMap.get(table).keySet()) {
 				// get the data element
-				String data = filterMap.get(table).get(column);
+				String data = inputMap.get(table).get(column);
 				// look up a table row(s) Map by data and column
 				System.out.println( "Query: table: "+table+", column: "+column+", data: "+data );
 				Table t = this.dbObject.tables(table);
