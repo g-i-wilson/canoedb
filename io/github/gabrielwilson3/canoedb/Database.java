@@ -45,5 +45,10 @@ public class Database {
 		tableMap.put( t.name(), t );
 		return t;
 	}
+	
+	// Access database name
+	public String name () {
+		return this.dbName;
+	}
 
 }

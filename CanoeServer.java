@@ -66,14 +66,53 @@ class ClientHandler extends Thread {
 			BufferedReader 	in 	= new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			PrintStream 	out	= new PrintStream(new BufferedOutputStream(socket.getOutputStream()));
 
-			String request = in.readLine();
-			System.out.println( "CanoeServer: "+request );  // Log the request
+			// Create new Request object
+			Request r = new Request( in );
+			
+			// Create new Query object
+			Query q = new Query( database );
+			String output = "";
+			String mime = "text/html";
+			
+			// Execute the query
+			for (String rest_keyword : r.rest() ) {
+				switch (rest_keyword) {
+					case "cgi_in" :
+						q.inputCGI( r.data() );
+						break;
+					case "json_in" :
+						q.inputJSON( r.data() );
+						break;
+					case "write" :
+						q.write();
+						break;
+					case "read" :
+						q.read();
+						break;
+					case "columns" :
+						q.columns();
+						break;
+					case "rows" :
+						q.rows();
+						break;
+					case "json_out" :
+						output += q.outputJSON();
+						mime = "application/json";
+						break;
+					case "csv_out" :
+						output += q.outputCSV();
+						mime = "text/csv";
+						break;
+					case "" :
+						// send HTML document here
+						mime = "text/html";
+						break;
+				}
+			}
+			
+			
+			//System.out.println( output );
 
-			CGIQuery q = new CGIQuery( database, request );
-			String output = "CanoeDB: " + q.map().toString();
-			System.out.println( output );
-
-			String mime="text/html";
 
 			out.print("HTTP/1.0 200 OK\r\n"+
 			  "Content-type: "+mime+"\r\n\r\n");
