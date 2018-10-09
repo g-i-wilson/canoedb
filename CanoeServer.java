@@ -77,6 +77,7 @@ class ClientHandler extends Thread {
 			// Send the request data to the query
 			q.parse( r.data() );
 			
+			
 			// Execute the query
 			for (String rest_keyword : r.rest() ) {
 				switch (rest_keyword) {
