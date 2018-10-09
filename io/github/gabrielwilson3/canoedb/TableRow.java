@@ -73,7 +73,8 @@ class TableRow {
 				&& filterMap.containsKey(tableName)
 				&& filterMap.get(tableName).containsKey(column)
 			) {
-				if (filterMap.get(tableName).get(column).equals(data)) {
+				// Look up the filterMap data in the index for this table/column and see if it references back to this table
+				if ( this.tableObject.index( column, filterMap.get(tableName).get(column) ).containsValue(this) ) {
 					// if filter has been applied and is OK, then it is removed.
 					// this allows us to not have to traverse the entire "virtual tableRow"...
 					// ...if all filters have been used up and all results have been filled in.

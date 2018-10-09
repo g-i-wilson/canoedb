@@ -21,14 +21,21 @@ class TableIndex {
 			this.index.put( col, new HashMap<String, Map<String, TableRow>>() );
 		
 		// index each begins-with slice of the data string
-		for (int i=0; i<data.length(); i++) {
+		//for (int i=0; i<data.length(); i++) {
 			// slice
-			String begins_with = data.substring( 0, i+1 );
+			//String begins_with = data.substring( 0, i+1 );
 			// "vivinate" if necessary
-			if (!this.index.get(col).containsKey(begins_with))
-				this.index.get( col ).put( begins_with, new HashMap<String, TableRow>() );
+			//if (!this.index.get(col).containsKey(begins_with))
+				//this.index.get( col ).put( begins_with, new HashMap<String, TableRow>() );
 			// Insert the object
-			this.index.get( col ).get( begins_with ).put( rowObject.str(), rowObject );
+			//this.index.get( col ).get( begins_with ).put( rowObject.str(), rowObject );
+		//}
+		
+		// Index the entire string
+		this.indexData( data, rowObject, this.index.get( col ) );
+		// Also index all the "words" in the string
+		for (String word : data.split(" ")) {
+			if (!word.equals("")) this.indexData( word, rowObject, this.index.get( col ) );
 		}
 		
 		// allow chaining
@@ -43,9 +50,21 @@ class TableIndex {
 		if (this.index.containsKey(col) && this.index.get(col).containsKey(data)) {
 			return this.index.get( col ).get( data );
 		} else {
-			// otherwise just return the "null set"
+			// otherwise just return the "null set" HashMap
 			System.out.println( "TableIndex: no TableRow objects found for: "+col+", "+data );
-			return null;
+			return null_map;
+		}
+	}
+	
+	private void indexData( String data, TableRow rowObject, Map<String, Map<String, TableRow>> map ) {
+		// index each begins-with slice of the data string
+		for (int i=0; i<data.length(); i++) {
+			// slice
+			String begins_with = data.substring( 0, i+1 );
+			// "vivinate" if necessary
+			if (!map.containsKey(begins_with)) map.put( begins_with, new HashMap<String, TableRow>() );
+			// Insert the object
+			map.get( begins_with ).put( rowObject.str(), rowObject );
 		}
 	}
 	
