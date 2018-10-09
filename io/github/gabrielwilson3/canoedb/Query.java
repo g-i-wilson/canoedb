@@ -22,6 +22,9 @@ public class Query {
 	// database object
 	Database dbObject;
 	
+	// logic: inclusive query (OR) or exclusive query (AND) -- default is AND
+	boolean ANDlogic = true;
+	
 	// DEFAULT SETTINGS
 	// output map (just a reference to either the rowMap or colMap)
 	Map<String, Map<String, Map<String, String>>> outputMap = rowMap;
@@ -72,29 +75,47 @@ public class Query {
 					Map<String, TableRow> trMap = t.index(column, data);
 					System.out.println( "Query: stem table rows: "+trMap );
 					for (TableRow trObject : trMap.values()) {
-						Map<String, Map<String, String>> output = this.getNewOutput();
-						// pass the output Map object reference (to be loaded with the output)
-						trObject.getData( output );
-						// use the "stringified" version of a output HashMap as its key (eliminates any duplicates)
-						this.rowMap.put( "key<"+output.toString()+">", output );
-						System.out.println( "Query: row: "+trObject.str() );
+						// create a new output Map
+						Map<String, Map<String, String>> output = this.cloneHash( this.outputTemplate );
+						// create a new input Map (or null if using OR logic)
+						Map<String, Map<String, String>> input = ( this.ANDlogic ? this.cloneHash( this.inputMap ) : null );
+						// send input/output Maps to the tableRow object (output to be loaded by the tableRow)
+						// getData returns true if it finds any data as it traverses the "virtual tableRow" via references
+						if ( trObject.getData( input, output ) ){
+							// use the "stringified" version of a output HashMap as its key (eliminates any duplicate rows)
+							this.rowMap.put( "key<"+output.toString()+">", output );
+							System.out.println( "Query: row: "+trObject.str() );
+						}
 					}
 				}
+				if (this.ANDlogic) break;
 			}
 		}
 		this.hasExecuted = true;
 		return this;
 	}
 	
+	// set AND logic
+	public Query and() {
+		this.ANDlogic = true;
+		return this;
+	}
+	
+	// set OR logic
+	public Query or() {
+		this.ANDlogic = false;
+		return this;
+	}
+	
 	// Clone a new output map (used by execute)
-	Map<String, Map<String, String>> getNewOutput () {
+	Map<String, Map<String, String>> cloneHash ( Map<String, Map<String, String>> template ) {
 		Map<String, Map<String, String>> templateClone = new HashMap<>();
 		// loop through (pseudo-code) table->Map<column,data>
-		for ( String table : outputTemplate.keySet() ) {
+		for ( String table : template.keySet() ) {
 			Map<String, String> templateCloneColumn = new HashMap<>();
 			// loop through (pseudo-code) column->data
-			for ( String column : outputTemplate.get(table).keySet() ) {
-				templateCloneColumn.put( column, outputTemplate.get(table).get(column) );
+			for ( String column : template.get(table).keySet() ) {
+				templateCloneColumn.put( column, template.get(table).get(column) );
 			}
 			templateClone.put( table, templateCloneColumn );
 		}
@@ -207,8 +228,8 @@ public class Query {
 		return this;
 	}
 
-	// Accept the query string as CGI key=value&key=value tuples
-	public Query inputCGI (String query) {
+	// Parse the query string as CGI key=value&key=value tuples
+	public Query parse (String query) {
 		// loop through cgi data query and directly map input, output, and operation data
 		String[] tuples = query.split("&");
 		for (int i=0;i<tuples.length;i++) {
@@ -219,13 +240,13 @@ public class Query {
 				String table = table_column[0];
 				String column = table_column[1];
 				if (data.equals("")) {
-					// empty data string makes this an output
+					// empty data string is a place-holder for an output
 					this.output(table, column);
-					System.out.println("CGIQuery output: table="+table+", column="+column);
+					System.out.println("Query output: table="+table+", column="+column);
 				} else {
-					// something in data makes this an input
+					// data that is not empty is considered an input
 					this.input(table, column, data);
-					System.out.println("CGIQuery input: table="+table+", column="+column+", data="+data);
+					System.out.println("Query input: table="+table+", column="+column+", data="+data);
 				}
 			} catch(Exception e) {
 				System.out.println("Didn't understand tuple: "+tuples[i]);
@@ -233,14 +254,8 @@ public class Query {
 			}
 		}
 		return this;
-	}
-	
-	// Accept the query string as JSON
-	public Query inputJSON (String query) {
+	}	
 
-		return this;
-	}
-	
 	
 	
 }

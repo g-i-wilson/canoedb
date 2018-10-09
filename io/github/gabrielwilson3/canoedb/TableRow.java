@@ -37,18 +37,24 @@ class TableRow {
 		return this.rowData;
 	}
 	
-	// "kick-off" method, that invokes the traverseRows method
-	void getData ( Map<String, Map<String, String>> resultMap ) {
+	// "kick-off" method, that creates the rowsTraversed object invokes the traverseRows method
+	boolean getData ( 	Map<String, Map<String, String>> filterMap,
+					Map<String, Map<String, String>> resultMap ) {
+		// false only if nothing to do...
+		if (resultMap==null) return false;
 		Map<TableRow, TableRow> rowsTraversed = new HashMap<>();
-		this.traverseRows( resultMap, rowsTraversed );
+		// false only if a filter disqualifies this traverse...
+		return this.traverseRows( filterMap, resultMap, rowsTraversed );
 	}
 	
 	// Traverse method that gathers data from this TableRow, and any TableRow referenced
-	void traverseRows ( Map<String, Map<String, String>> resultMap, Map<TableRow, TableRow> rowsTraversed ) {
+	boolean traverseRows ( Map<String, Map<String, String>> filterMap,
+						Map<String, Map<String, String>> resultMap,
+						Map<TableRow, TableRow> rowsTraversed ) {
 		
 		// make sure this tableRow hasn't already been traversed (no endless loops allowed):
 		if (rowsTraversed.containsValue(this)) {
-			return;
+			return true;
 		}
 		
 		System.out.println( "TableRow: traversing "+this.tableObject.name()+":"+this.id().toString() );
@@ -56,17 +62,39 @@ class TableRow {
 		// loop through each column in this tableRow and fill in the resultMap
 		for (String column : dataMap.keySet()) {
 			String data = dataMap.get(column);
-		
+
 			// if a column is called out in the resultMap,
-			// then add that data (if null).
+			// then add that data (but only if null).
 			String tableName = this.tableObject.name();
-			if (resultMap.containsKey(tableName) && resultMap.get(tableName).containsKey(column)) {
+		
+			// Check to see if there exists a filter that can disqualify this whole tableRow
+			if (
+				filterMap != null
+				&& filterMap.containsKey(tableName)
+				&& filterMap.get(tableName).containsKey(column)
+			) {
+				if (filterMap.get(tableName).get(column).equals(data)) {
+					// if filter has been applied and is OK, then it is removed.
+					// this allows us to not have to traverse the entire "virtual tableRow"...
+					// ...if all filters have been used up and all results have been filled in.
+					filterMap.get(tableName).put(column, null);
+				} else {
+					// if the filter fails, then all we need to do is bail-out by returning false.
+					System.out.println( "TableRow filter: "+this.tableObject.name()+":"+this.id().toString()+" -> "+resultMap.toString() );
+					return false;
+				}
+			}
+
+			if (
+				resultMap.containsKey(tableName)
+				&& resultMap.get(tableName).containsKey(column)
+			) {
 				resultMap.get(tableName).put(column, data);
-				System.out.println( "TableRow: "+this.tableObject.name()+":"+this.id().toString()+" -> "+resultMap.toString() );
+				System.out.println( "TableRow result: "+this.tableObject.name()+":"+this.id().toString()+" -> "+resultMap.toString() );
 			}
 			
-			// exit loop if no more null values remain in resultMap
-			if (this.resultComplete( resultMap )) break;
+			// return early if there's nothing left to do
+			if ( this.noNulls(resultMap) && this.allNulls(filterMap) ) return true;			
 			
 		}
 		
@@ -79,7 +107,7 @@ class TableRow {
 			// if a column contains a reference to a tableRow (that is not already in the rowsTraversed),
 			// then call traverseRows on that tableRow object.
 			String nameReference = this.tableObject.references(column);
-			if (!nameReference.equals("")) {
+			if (! nameReference.equals("")) {
 				// There exists a tableName string
 				Table tableReferenced = this.tableObject.db().tables(nameReference);
 				if (tableReferenced != null) {
@@ -89,27 +117,39 @@ class TableRow {
 						// The row ID does reference a valid table row
 						rowsTraversed.put( trReferenced, this ); // to_row_referenced -> from_this_row
 						System.out.println( "TableRow: TO "+nameReference+":"+rowId+" FROM "+this.tableObject.name()+":"+this.id() );
-						trReferenced.traverseRows( resultMap, rowsTraversed );
+						// Call the referenced tableRow (fast-tracking any false return);
+						if ( ! trReferenced.traverseRows( filterMap, resultMap, rowsTraversed ) ) return false;
 					}
 				}
 			}
 			
-			// exit loop if no more null values remain in resultMap
-			if (this.resultComplete( resultMap )) break;			
+			// return early if there's nothing left to do
+			if ( this.noNulls(resultMap) && this.allNulls(filterMap) ) return true;			
 			
 		}
 		
+		// if we haven't returned yet for any other reason, then return true...
+		return true;
+		
 	}
 	
-	// function to check for result complete
-	boolean resultComplete (Map<String, Map<String, String>> resultMap) {
-		// loop through tables
-		for (String table : resultMap.keySet()) {
-			Map<String, String> columnMap = resultMap.get(table);
-			// loop through columns
-			for (String column : columnMap.keySet()) {
-				// get data string using the column
-				if (columnMap.get(column) == null) return false;
+	// function to check for existance of nulls
+	boolean noNulls (Map<String, Map<String, String>> map) {
+		if (map==null) return false;
+		for (String a : map.keySet()) {
+			for (String b : map.get(a).keySet()) {
+				if (map.get(a).get(b) == null) return false;
+			}
+		}
+		return true;
+	}
+
+	// function to check for non-existance of nulls
+	boolean allNulls (Map<String, Map<String, String>> map) {
+		if (map==null) return true;
+		for (String a : map.keySet()) {
+			for (String b : map.get(a).keySet()) {
+				if (map.get(a).get(b) != null) return false;
 			}
 		}
 		return true;

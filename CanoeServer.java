@@ -74,14 +74,17 @@ class ClientHandler extends Thread {
 			String output = "";
 			String mime = "text/html";
 			
+			// Send the request data to the query
+			q.parse( r.data() );
+			
 			// Execute the query
 			for (String rest_keyword : r.rest() ) {
 				switch (rest_keyword) {
-					case "cgi_in" :
-						q.inputCGI( r.data() );
+					case "and" :
+						q.and();
 						break;
-					case "json_in" :
-						q.inputJSON( r.data() );
+					case "or" :
+						q.or();
 						break;
 					case "write" :
 						q.write();
@@ -95,11 +98,11 @@ class ClientHandler extends Thread {
 					case "rows" :
 						q.rows();
 						break;
-					case "json_out" :
+					case "json" :
 						output += q.outputJSON();
 						mime = "application/json";
 						break;
-					case "csv_out" :
+					case "csv" :
 						output += q.outputCSV();
 						mime = "text/csv";
 						break;
