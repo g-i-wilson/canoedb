@@ -2,214 +2,181 @@ package io.github.gabrielwilson3.canoedb;
 
 import java.util.*;
 import java.net.*;
+import java.math.BigInteger;
 
 public class Query {
 	
-	// output template
-	// table -> column -> null
-	Map<String, Map<String, String>> outputTemplate = new HashMap<> ();
-	
 	// native output format is rowMap
 	// rowMap: row_str -> table -> column -> data
-	Map<String, Map<String, Map<String, String>>> rowMap = new HashMap<>();
+	StringMap3D<String> rowMap = new StringMap3D<>();
 	// colMap: table -> column -> data -> quantity
-	Map<String, Map<String, Map<String, String>>> colMap = new HashMap<>();
+	StringMap3D<String> colMap;
 	
 	// input
 	// table -> column -> data
-	Map<String, Map<String, String>> inputMap = new HashMap<> ();
-	
+	StringMap2D<String> inputTemplate = new StringMap2D<>();
+	// output
+	// table -> column -> null
+	StringMap2D<String> outputTemplate = new StringMap2D<>();
+		
 	// database object
-	Database dbObject;
-	
-	// logic: inclusive query (OR) or exclusive query (AND) -- default is AND
-	boolean ANDlogic = true;
+	Database db;	
 	
 	// DEFAULT SETTINGS
 	// output map (just a reference to either the rowMap or colMap)
-	Map<String, Map<String, Map<String, String>>> outputMap = rowMap;
-	// read-only mode (read) vs read-write mode (write)
-	boolean writeMode = false;
+	StringMap3D<String> outputMap = rowMap;
+	// flags
+	boolean writeMode 	= false;
+	boolean hasExecuted	= false;
+	boolean ANDlogic 	= true; // inclusive (OR) or exclusive (AND) -- default is AND
 	
-	// flag to remember whether we've executed
-	boolean hasExecuted = false;
 	
-	
-	// Constructor when nothing is passed (e.g. extending this object)
-	public Query () {}
-	
-	// Constructor when passed a Database object
-	public Query (Database db) {
-		dbObject = db;
+	// Constructor
+	public Query (Database d) {
+		db = d;
 	}
 	
 	// Add an output
 	public Query output (String table, String column) {
-		if (!outputTemplate.containsKey(table)) outputTemplate.put( table, new HashMap<String, String>() );
-		outputTemplate.get( table ).put( column, null );
+		outputTemplate.write( table, column, null );
 		return this;
 	}
 	
 	// Add an input
 	public Query input (String table, String column, String data) {
-		if (!inputMap.containsKey(table)) inputMap.put( table, new HashMap<String, String>() );
-		inputMap.get( table ).put( column, data );
+		inputTemplate.write( table, column, data );
 		return this;
 	}
 	
-	// loop through filters to get each TableRow
-	// ask that TableRow to populate outputTemplate
-	// add outputTemplate to rowMap
+	// Execute read or write-read
 	public Query execute() {
-		System.out.println( "\nQuery: rowMap: "+outputTemplate.toString()+"\n\n" );
-		// loop through tables
-		for (String table : inputMap.keySet()) {
-			// loop through columns
-			for (String column : inputMap.get(table).keySet()) {
-				// get the data element
-				String data = inputMap.get(table).get(column);
-				// look up a table row(s) Map by data and column
-				System.out.println( "Query: table: "+table+", column: "+column+", data: "+data );
-				Table t = this.dbObject.tables(table);
-				if (t != null) {
-					Map<String, TableRow> trMap = t.index(column, data);
-					System.out.println( "Query: stem table rows: "+trMap );
-					for (TableRow trObject : trMap.values()) {
-						// create a new output Map
-						Map<String, Map<String, String>> output = this.cloneHash( this.outputTemplate );
-						// create a new input Map (or null if using OR logic)
-						Map<String, Map<String, String>> input = ( this.ANDlogic ? this.cloneHash( this.inputMap ) : null );
-						// send input/output Maps to the tableRow object (output to be loaded by the tableRow)
-						// getData returns true if it finds any data as it traverses the "virtual tableRow" via references
-						if ( trObject.getData( input, output ) ){
-							// use the "stringified" version of a output HashMap as its key (eliminates any duplicate rows)
-							this.rowMap.put( "key<"+output.toString()+">", output );
-							System.out.println( "Query: row: "+trObject.str() );
-						}
+		System.out.println( "\n\nQuery: input: "+inputTemplate );
+		System.out.println( "\nQuery: output: "+outputTemplate+"\n\n" );
+		// write (only once per Query)
+		if (!hasExecuted && writeMode) {
+			//
+			// ************* write code ****************
+			//
+		}
+		// read
+		for (String table : inputTemplate.keys()) {
+			for (String column : inputTemplate.keys(table)) {
+				String data = inputTemplate.read(table, column);
+				for (TableRow tr : db.table(table).search(column, data)) {
+					StringMap2D<String> output = outputTemplate.cloned();
+					StringMap2D<String> input = ( ANDlogic ? inputTemplate.cloned() : null );
+					if ( tr.read( input, output ) ){
+						// use the "stringified" version of a output HashMap as its key (eliminates any duplicate rows)
+						rowMap.write( output.toString(), output.map() );
+						System.out.println( "Query: row: "+tr );
 					}
 				}
-				if (this.ANDlogic) break;
+				// we only need the first filter (i.e. first set of "stem" rows) under AND logic
+				if (ANDlogic) break;
 			}
 		}
-		this.hasExecuted = true;
+		hasExecuted = true;
 		return this;
 	}
 	
 	// set AND logic
 	public Query and() {
-		this.ANDlogic = true;
+		ANDlogic = true;
 		return this;
 	}
 	
 	// set OR logic
 	public Query or() {
-		this.ANDlogic = false;
+		ANDlogic = false;
 		return this;
 	}
 	
-	// Clone a new output map (used by execute)
-	Map<String, Map<String, String>> cloneHash ( Map<String, Map<String, String>> template ) {
-		Map<String, Map<String, String>> templateClone = new HashMap<>();
-		// loop through (pseudo-code) table->Map<column,data>
-		for ( String table : template.keySet() ) {
-			Map<String, String> templateCloneColumn = new HashMap<>();
-			// loop through (pseudo-code) column->data
-			for ( String column : template.get(table).keySet() ) {
-				templateCloneColumn.put( column, template.get(table).get(column) );
-			}
-			templateClone.put( table, templateCloneColumn );
-		}
-		return templateClone;
-	}
 	
 	// set Database
-	public Query database(Database db) {
-		this.dbObject = db;
+	public Query database(Database d) {
+		db = d;
 		return this;
-	}
-	
-	// set map to rowMap
-	public Map<String, Map<String, Map<String, String>>> map() {
-		return this.outputMap;
 	}
 	
 	// set mode to write-read
 	public Query write() {
 		// if we're switching to write and have already executed, then re-execute
-		if(!this.writeMode && this.hasExecuted) {
-			this.writeMode = true;
-			this.execute();
-		} else {
-			this.writeMode = true;
-		}
+		if(!writeMode && hasExecuted) {
+			writeMode = true;
+			execute();
+		} else writeMode = true;
 		return this;
 	}
 	
 	// set mode to read-only
 	public Query read() {
-		this.writeMode = false;
+		writeMode = false;
 		return this;
 	}
 	
 	// set map to rowMap
 	public Query rows() {
 		// all the data is already in rowMap
-		this.outputMap = this.rowMap;
+		outputMap = rowMap;
 		return this;
 	}
 	
 	// set map to colMap, and re-map data
 	public Query columns() {
+		colMap = new StringMap3D<>();
 		// make sure we've executed first
-		if(!this.hasExecuted) this.execute();
+		if(!hasExecuted) execute();
 		// map data from rowMap into colMap
-		for ( String row : rowMap.keySet() ) {
-			for ( String table : rowMap.get(row).keySet() ) {
-				// auto-vivinate the table
-				if (!colMap.containsKey(table)) colMap.put(table, new HashMap<String, Map<String, String>>());
-				for ( String column : rowMap.get(row).get(table).keySet() ) {
-					String data = rowMap.get(row).get(table).get(column);
-					// auto-vivinate the column
-					if (!colMap.get(table).containsKey(column)) colMap.get(table).put(column, new HashMap<String, String>());
-					if (!colMap.get(table).get(column).containsKey(data)) {
-						colMap.get(table).get(column).put(data, "1");
-					} else {
-						int data_qty = Integer.parseInt( colMap.get(table).get(column).get(data) ) + 1;
-						colMap.get(table).get(column).put(data, Integer.toString(data_qty));
-					}
+		for ( String row : rowMap.keys() ) {
+			for ( String table : rowMap.keys(row) ) {
+				for ( String column : rowMap.keys(row, table) ) {
+					String rowData = rowMap.read(row, table, column);
+					String colData = colMap.read(table, column, rowData);
+					colMap.write(table, column, rowData, incrementNumericalString(colData) );
 				}
 			}
 		}
-		System.out.println( "Query: rowMap="+this.rowMap.toString() );
-		System.out.println( "Query: colMap="+this.colMap.toString() );
-		System.out.println( "Query: outputMap="+this.outputMap.toString() );
-		this.outputMap = this.colMap;
-		System.out.println( "Query: outputMap="+this.outputMap.toString() );
+		// route output from colMap
+		outputMap = colMap;
+		System.out.println( "Query: rowMap: "+rowMap );
+		System.out.println( "Query: colMap: "+colMap );
+		System.out.println( "Query: outputMap: "+outputMap );
 		return this;
+	}
+	
+	// increment a numerical value held as a String
+	private String incrementNumericalString (String numberString) {
+		try {
+			BigInteger bigNum = new BigInteger(numberString);
+			String numberPlusOne = bigNum.add(BigInteger.ONE).toString();
+			return numberPlusOne;
+		} catch (Exception e) {
+			return "1";
+		}
 	}
 	
 	// Create a JSON string from one of the Map objects
 	public String outputJSON () {
 		// make sure we've executed first
-		if(!this.hasExecuted) this.execute();
-
+		if(!hasExecuted) execute();
+		
 		String output = "{\n";
 		String a_comma = "\n";
-		for ( String a : outputMap.keySet() ) {
+		for ( String a : outputMap.keys() ) {
 			output += a_comma+"\t\""+a+"\" : {";
 			a_comma = ",\n";
 			String b_comma = "\n";
-			for ( String b : outputMap.get(a).keySet() ) {
+			for ( String b : outputMap.keys(a) ) {
 				output += b_comma+"\t\t\""+b+"\" : {";
 				b_comma = ",\n";
 				String c_comma = "\n";
-				for ( String c : outputMap.get(a).get(b).keySet() ) {
+				for ( String c : outputMap.keys(a,b) ) {
 					try {
-						output += c_comma+"\t\t\t\""+c+"\" : \""+outputMap.get(a).get(b).get(c).replace("\"","\\\"")+"\"";
+						output += c_comma+"\t\t\t\""+c+"\" : \""+outputMap.read(a,b,c).replace("\"","\\\"")+"\"";
 						c_comma = ",\n";
-						System.out.println( "Query: added data point "+outputMap.get(a).get(b).get(c) );
+						System.out.println( "Query: added data point "+outputMap.read(a,b,c) );
 					} catch (Exception e) {
-						System.out.println( "Query: problem with data point '"+outputMap.get(a).get(b).get(c)+"'" );
+						System.out.println( "Query: problem with data point '"+outputMap.read(a,b,c)+"'" );
 						e.printStackTrace(System.out);
 					}
 				}
@@ -223,7 +190,7 @@ public class Query {
 	// Create a CSV string from one of the Map objects
 	public Query outputCSV () {
 		// make sure we've executed first
-		if(!this.hasExecuted) this.execute();
+		if(!hasExecuted) execute();
 
 		return this;
 	}

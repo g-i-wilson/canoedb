@@ -41,7 +41,9 @@ public class CanoeServer {
 				new ClientHandler(s, database);  // Handle the client in a separate thread
 			}
 				catch (Exception x) {
+				System.out.println("CanoeServer: Server exception caught.");
 				System.out.println(x);
+				x.printStackTrace(System.out);
 			}
 		}
 	}
@@ -66,21 +68,22 @@ class ClientHandler extends Thread {
 			BufferedReader 	in 	= new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			PrintStream 	out	= new PrintStream(new BufferedOutputStream(socket.getOutputStream()));
 
-			// Create new Request object
-			Request r = new Request( in );
+			// Request object
+			Request 		r = new Request( in );
 			
-			// Create new Query object
-			Query q = new Query( database );
-			String output = "";
-			String mime = "text/html";
+			// Query object
+			Query 			q = new Query( database );
 			
-			// Send the request data to the query
+			// Send the Request data to the Query
 			q.parse( r.data() );
 			
+			// Initialize html variables
+			String 			output = "";
+			String 			mime = "text/html";
 			
 			// Execute the query
-			for (String rest_keyword : r.rest() ) {
-				switch (rest_keyword) {
+			for (String keyword : r.path() ) {
+				switch (keyword) {
 					case "and" :
 						q.and();
 						break;
@@ -109,22 +112,25 @@ class ClientHandler extends Thread {
 						break;
 					case "" :
 						// send HTML document here
+						output +=
+							"<html><head><title>CanoeDB</title></head><body>"+
+							"<h1>[form HTML here]</h1>"+
+							"</body></html>";
 						mime = "text/html";
 						break;
 				}
 			}
 			
-			
-			//System.out.println( output );
-
-
-			out.print("HTTP/1.0 200 OK\r\n"+
-			  "Content-type: "+mime+"\r\n\r\n");
+			out.print(
+				"HTTP/1.0 200 OK\r\n"+
+				"Content-type: "+mime+"\r\n"+
+				"\r\n"
+			);
 			out.print( output );
 			out.close();
 		}
 		catch (Exception x) {
-			System.out.println("Thread exception caught.");
+			System.out.println("ClientHandler: Thread exception caught.");
 			x.printStackTrace(System.out);
 		}
 	}

@@ -2,108 +2,230 @@ package io.github.gabrielwilson3.canoedb;
 
 import java.util.*;
 import java.math.BigInteger;
+import java.nio.file.*;
+import java.io.File;
+
 
 class Table {
 	
 	// Table properties
-	String 					tableName;
-	String[] 				tablecolumns;
-	Map<String, String> 	referenceMap;
-	Map<String, String> 	onReadMap;
-	Map<String, String> 	onWriteMap;
+	String 					name;
+	String[] 				columns;
+	StringMap1D<String>		columnMap;
+	StringMap1D<String> 	referenceMap;
+	StringMap1D<String> 	onReadMap;
+	StringMap1D<String> 	onWriteMap;
 	
 	// Table rows
-	Map<String, TableRow> 	rowIdMap = new HashMap<>();
-	Map<String, TableRow>	rowDataMap = new HashMap<>();
+	StringMap1D<TableRow> 	rowIdMap = new StringMap1D<>();
+	StringMap1D<TableRow> 	rowDataMap = new StringMap1D<>();
 	BigInteger 				highestRowId = new BigInteger("1");
 	
 	// Table file
-	TableFile				tableFile;
+	File					tableFile;
 
 	// Table index
 	TableIndex 				tableIndex = new TableIndex();
 	
-	// Database object containing this Table
-	Database				dbObject;
+	// Null Map
+	StringMap1D<TableRow> 	null_map = new StringMap1D<>();
 	
-	// Connect table to a physical file
-	Table ( Database d, TableFile f ) {
-		// receive the Database object
-		this.dbObject = d;
-		// receive the TableFile object
-		this.tableFile = f;
-		// link to the header structure
-		this.tableName = this.tableFile.name();
-		this.referenceMap = MapFunctions.twoStringArrays( this.tableFile.columns, this.tableFile.references );
-		this.onReadMap = MapFunctions.twoStringArrays( this.tableFile.columns, this.tableFile.onRead );
-		this.onWriteMap = MapFunctions.twoStringArrays( this.tableFile.columns, this.tableFile.onWrite );
-		// link to the data
-		this.tableFile.data.forEach(( id, data )->{
-			this.newRow( id, data );
-		});
+	// file exists
+	boolean					fileExists = false;
+	
+	// null set
+	Set<String>				null_set = new LinkedHashSet<>();
+	
+
+	// set the physical file
+	Table ( String filePath ) {
+		tableFile = new File( filePath );
+		init();
+	}
+	Table ( File f ) {
+		tableFile = f;
+		init();
+	}
+	void init () {
+		String fileName = tableFile.getName();
+		int pos = fileName.lastIndexOf(".");
+		if (fileName.lastIndexOf(".") > 0) {
+			fileName = fileName.substring(0, pos);
+		}
+		name = fileName;
+		System.out.println("Table: initialized "+name);
 	}
 	
-	// Append a row with a partial (or complete) row map
-	// Converts down to String[] > appends to file > newRow converts it back up to Map<>
-	boolean append( Map<String, String> newRowMap ) {
-		
-		// Produce a String[] using the Map object
-		String[] newData = new String[this.columns().length];
-		for (int i=0; i<this.columns().length; i++) {
-			if(newRowMap.containsKey(this.columns()[i])) {
-				newData[i] = newRowMap.get(this.columns()[i]);
-			} else {
-				newData[i] = "";
+	// Load table from a physical file
+	boolean read () {
+		// read CSV file
+		try (Scanner sc = new Scanner(tableFile, "UTF-8")) {
+			// initialize the basic table info maps
+			columns			= removeFirst( decodeArray(sc.nextLine().split(",")) );
+			columnMap		= blankMap( columns );
+			referenceMap	= twoArraysMap( columns, removeFirst(decodeArray(sc.nextLine().split(","))) );
+			onReadMap		= twoArraysMap( columns, removeFirst(decodeArray(sc.nextLine().split(","))) );
+			onWriteMap		= twoArraysMap( columns, removeFirst(decodeArray(sc.nextLine().split(","))) );
+			fileExists = true;
+			// Loop through lines and fill fileMap with TableRow objects
+			while (sc.hasNextLine()) {
+				// read a CSV data line: id,data1,dataN
+				String[] 	data 	= decodeArray( sc.nextLine().split(",") );
+				String 		rowId 	= data[0];
+				String[] 	rowData = removeFirst( data );
+				// spawn a TableRow
+				TableRow 	tr 		= new TableRow( this, rowId, twoArraysMap( columns, rowData ) );
+				System.out.println("Table: read row "+tr.data.toString());
+				checkRowId( tr.id );
+				logTableRow( tr );
 			}
-		}
-		
-		// Try to append to the physical TableFile
-		String id = this.nextRowId();
-		if (this.tableFile.append( id, newData )){
-			// If that works, then call newRow()
-			this.newRow( id, newData );
-			return true;
-		} else {
+			// Scanner suppresses io exceptions
+			if (sc.ioException() != null) System.out.println( "Table: file io exception: "+sc.ioException() );
+		} catch (Exception e) {
+			System.out.println( "Table: file Scanner exception: "+e );
+			e.printStackTrace();
 			return false;
 		}
+		// memory
+		printMemoryUsage();
+		// able to read file
+		return true;
+	}
+	
+	// get a Set of all the TableRow objects in this Table
+	Set<String> rows () {
+		return rowIdMap.keys();
+	}
+	
+	// get a map of TableRow objects based on column -> data_fragment
+	Collection<TableRow> search (String column, String dataFragment) {
+		System.out.println( "Table: index input: "+column+","+dataFragment );
+		return tableIndex.search( column, dataFragment );
+	}
+	
+	// Creates a new table row (virtual; not yet appended)
+	TableRow row () {
+		// spawn a new row
+		TableRow tr = new TableRow(this, nextRowId(), columnMap.cloned());
+		System.out.println( "Table "+name+": added row "+tr.id+" (auto-ID)" );
+		return tr;
 	}
 
-	
-	// Spawn a TableRow object
-	TableRow newRow ( String id, String[] data ) {
-		// new row
-		TableRow rowObject = new TableRow( id, data, this );
-		// record the row by id and by hash-str
-		this.rowIdMap.put( rowObject.id(), rowObject );
-		this.rowDataMap.put( rowObject.str(), rowObject );
-		// Increment the highest row integer
-		this.checkRowId( rowObject.id() );
-		System.out.println( rowObject.id() );
-		// update the TableIndex
-		for (String column : this.columns()) {
-			// column -> data -> TableRowObject
-			this.tableIndex.appendRow( column, rowObject.field( column ), rowObject );
-		}
-		// return a reference to the row object
-		return rowObject;
-	}
-
-	
-	// Pull a new row id
-	String nextRowId () {
-		// increment the highestRowId
-		this.highestRowId = this.highestRowId.add( BigInteger.ONE );
-		// return the new id
-		if ( this.rowIdMap.containsKey(this.highestRowId.toString()) ) {
-			// recursion
-			return this.nextRowId();
+	// Get a TableRow by ID or create an empty TableRow for that ID
+	TableRow row ( String id ) {
+		if (rowIdMap.defined(id)) {
+			// access a real row
+			return rowIdMap.read(id);
 		} else {
-			return this.highestRowId.toString();
+			// spawn a new row (virtual; not yet appended)
+			TableRow tr = new TableRow(this, id, columnMap.cloned());
+			System.out.println( "Table "+name+": added row "+tr.id );
+			logTableRow( tr );
+			return tr;
+		}
+	}
+	
+	// Get a TableRow by data 
+	TableRow row ( StringMap1D<String> data ) {
+		if (rowDataMap.defined(data.toString())) {
+			return rowDataMap.read(data.toString());
+		} else {
+			TableRow tr = row();
+			tr.update( data );
+			append( tr );
+			checkRowId( tr.id );
+			logTableRow( tr );
+			return tr;
+		}
+	}
+			
+	// append to the end of the Table file
+	boolean append (TableRow tr) {
+		// check for Table file existance
+		if (!fileExists) {
+			// use the data structure from this TableRow to initialize Table columns
+			columnMap = tr.data.templated( "" ); // returns new templated object initialized to "" values
+			referenceMap = columnMap; // we can just reference this same object for the rest...
+			onReadMap = columnMap;
+			onWriteMap = columnMap;
+			// create a file header string
+			String str =
+				","+name+"\n"+
+				","+String.join(",", columnMap.keys())+"\n"+
+				",\n"+
+				",\n"+
+				",";
+			try {
+				Files.write(tableFile.toPath(), str.getBytes());
+				fileExists = true;
+				System.out.println( "Table "+name+": written to file "+tableFile );
+			} catch (Exception e) {
+				System.out.println("Table: ERROR writing to file "+tableFile);
+				System.out.println(e);
+				e.printStackTrace();
+				return false;
+			}
+		}
+		// make sure the TableRow has been logged
+		logTableRow( tr );
+		// append the TableRow to the Table file
+		String str = "\n"+tr.data.join(",");
+		try {
+			Files.write(tableFile.toPath(), str.getBytes(), StandardOpenOption.APPEND);
+			System.out.println( "Table "+name+": appended row "+tr.id );
+		} catch (Exception e) {
+			System.out.println("Table: ERROR appending to file "+tableFile);
+			System.out.println(e);
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+		
+	// referenced Table
+	String reference (String column) {
+		if (referenceMap!=null && referenceMap.defined(column))
+			return referenceMap.read(column);
+		else return "";
+	}
+
+	// onRead command
+	String onRead (String column) {
+		if (onReadMap!=null && onReadMap.defined(column))
+			return onReadMap.read(column);
+		else return "";
+	}
+
+	// onWrite command
+	String onWrite (String column) {
+		if (onWriteMap!=null && onWriteMap.defined(column))
+			return onWriteMap.read(column);
+		else return "";
+	}
+	
+	// log a TableRow in the ID & data maps, and also the index
+	private void logTableRow ( TableRow tr ) {
+		rowIdMap.write( tr.id, tr );
+		rowDataMap.write( tr.data.toString(), tr );
+		// update the TableIndex
+		tableIndex.write( tr );
+	}
+
+	// Pull a new row id
+	private String nextRowId () {
+		// increment the highestRowId
+		highestRowId = highestRowId.add( BigInteger.ONE );
+		// return the new id
+		if ( rowIdMap.defined(highestRowId.toString()) ) {
+			// recursion
+			return nextRowId();
+		} else {
+			return highestRowId.toString();
 		}
 	}
 	
 	// check the highestRowId
-	void checkRowId( String id ) {
+	private void checkRowId( String id ) {
 		// check the id to see if highestRowId is equal or higher; replace otherwise
 		try {
 			BigInteger toCheck = new BigInteger( id );
@@ -117,48 +239,76 @@ class Table {
 
 	}
 	
-	// get a row object by ID
-	TableRow getRow (String id) {
-		return this.rowIdMap.get(id);
+	// map keys[] -> values[]
+	private StringMap1D<String> twoArraysMap (String[] keys, String[] values) {
+		StringMap1D<String> aMap = new StringMap1D<>();
+		for (int i = 0; i < keys.length; i++) {
+			if (values!=null && values.length > i && values[i] != null) {
+				aMap.write( keys[i], values[i] );
+			} else {
+				aMap.write( keys[i], "" );
+			}
+		}
+		return aMap;
 	}
+	
+	// map keys[] -> values[]
+	private StringMap1D<String> blankMap (String[] keys) {
+		StringMap1D<String> aMap = new StringMap1D<>();
+		for (int i = 0; i < keys.length; i++) {
+			aMap.write( keys[i], "" );
+		}
+		return aMap;
+	}
+	
+	// Remove first element from an array
+	private String[] removeFirst (String[] a) {
+		if (a.length > 1) {
+			return Arrays.copyOfRange(a, 1, a.length);
+		} else {
+			return new String[]{};
+		}
+	}
+	
+	// encode (embedded commas)
+	private String[] encodeArray (String[] a) {
+		for (int i=0; i<a.length; i++) {
+			a[i] = a[i].replace( ",", "%2C" );
+		}
+		return a;
+	}
+	
+	// decode (embedded commas)
+	private String[] decodeArray (String[] a) {
+		for (int i=0; i<a.length; i++) {
+			a[i] = a[i].replace( "%2C", "," );
+		}
+		return a;
+	}
+	
+	// table memory usage
+	void printMemoryUsage () {
+		
+		int mb = 1024*1024;
+		
+		//Getting the runtime reference from system
+		Runtime runtime = Runtime.getRuntime();
+		
+		System.out.println("##### Heap utilization statistics [MB] #####");
+		
+		//Print used memory
+		System.out.println("Used Memory:" 
+			+ (runtime.totalMemory() - runtime.freeMemory()) / mb);
 
-	// Filtered maps of TableRow objects
-	Map<String, TableRow> index (String column, String dataElement) {
-		System.out.println( "Table: index input: "+column+","+dataElement );
-		Map<String, TableRow> filteredRows = this.tableIndex.filterRows( column, dataElement );
-		System.out.println( "Table: index output: "+filteredRows.toString() );
-		return filteredRows;
-	}
+		//Print free memory
+		System.out.println("Free Memory:" 
+			+ runtime.freeMemory() / mb);
+		
+		//Print total available memory
+		System.out.println("Total Memory:" + runtime.totalMemory() / mb);
 
-	// Name of the containing database:
-	Database db () {
-		return this.dbObject;
-	}
-	
-	// Name of this table
-	String name () {
-		return this.tableName;
-	}
+		//Print Maximum available memory
+		System.out.println("Max Memory:" + runtime.maxMemory() / mb);
 
-	// columns of this table
-	String[] columns () {
-		return this.tableFile.columns();
 	}
-
-	// Tables referenced by this table
-	String references (String column) {
-		return this.referenceMap.get( column );
-	}
-	
-	// Transformation to occur on data before being read
-	String onRead (String column) {
-		return this.onReadMap.get( column );
-	}
-	
-	// Transformation to occur on data before being written
-	String onWrite (String column) {
-		return this.onWriteMap.get( column );
-	}
-	
-	
 }

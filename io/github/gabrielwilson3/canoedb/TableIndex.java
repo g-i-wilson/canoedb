@@ -8,63 +8,45 @@ import java.util.regex.Pattern;
 class TableIndex {
 
 	// Table columns (for finding row by column data)
-	// column -> data -> hash_str -> TableRowObject
-	Map<String, Map<String, Map<String, TableRow>>> index = new HashMap<String, Map<String, Map<String, TableRow>>>();
-	
-	// Null Map of TableRow objects
-	Map<String, TableRow> null_map = new HashMap<>();
+	// column -> datafragment -> rowData -> TableRowObject (ignores duplicate rows)
+	StringMap3D<TableRow> index = new StringMap3D<>();
+
+	// null_collection
+	Collection<TableRow> 	null_collection = new ArrayList<>();
 
 
-	TableIndex appendRow (String col, String data, TableRow rowObject) {
-		// Check for existance and create new objects
-		if (!this.index.containsKey( col ))
-			this.index.put( col, new HashMap<String, Map<String, TableRow>>() );
+	TableIndex write (TableRow tr) {
+		for (String column : tr.data.keys()) {
+			String columnData = tr.data(column);
+			// index the entire data string
+			indexData( column, columnData, tr.data.toString(), tr );
+			// index each "word" in the data string
+			for (String word : columnData.split(" ")) {
+				if (!word.equals("")) indexData( column, word, tr.data.toString(), tr );
+			}
 		
-		// index each begins-with slice of the data string
-		//for (int i=0; i<data.length(); i++) {
-			// slice
-			//String begins_with = data.substring( 0, i+1 );
-			// "vivinate" if necessary
-			//if (!this.index.get(col).containsKey(begins_with))
-				//this.index.get( col ).put( begins_with, new HashMap<String, TableRow>() );
-			// Insert the object
-			//this.index.get( col ).get( begins_with ).put( rowObject.str(), rowObject );
-		//}
-		
-		// Index the entire string
-		this.indexData( data, rowObject, this.index.get( col ) );
-		// Also index all the "words" in the string
-		for (String word : data.split(" ")) {
-			if (!word.equals("")) this.indexData( word, rowObject, this.index.get( col ) );
 		}
 		
 		// allow chaining
 		return this;
 	}
 	
-	void print() {
-		System.out.println( "TableIndex: "+index.toString() );
-	}
-	
-	Map<String, TableRow> filterRows (String col, String data) {
-		if (this.index.containsKey(col) && this.index.get(col).containsKey(data)) {
-			return this.index.get( col ).get( data );
+	Collection<TableRow> search (String col, String dataFragment) {
+		if (index.exists(col, dataFragment)) {
+			return index.read(col, dataFragment).values();
 		} else {
-			// otherwise just return the "null set" HashMap
-			System.out.println( "TableIndex: no TableRow objects found for: "+col+", "+data );
-			return null_map;
+			// otherwise just return the null
+			System.out.println( "TableIndex: no TableRow objects found for: "+col+", "+dataFragment );
+			return null_collection;
 		}
 	}
 	
-	private void indexData( String data, TableRow rowObject, Map<String, Map<String, TableRow>> map ) {
+	private void indexData( String col, String data, String hash, TableRow tr ) {
 		// index each begins-with slice of the data string
 		for (int i=0; i<data.length(); i++) {
 			// slice
 			String begins_with = data.substring( 0, i+1 );
-			// "vivinate" if necessary
-			if (!map.containsKey(begins_with)) map.put( begins_with, new HashMap<String, TableRow>() );
-			// Insert the object
-			map.get( begins_with ).put( rowObject.str(), rowObject );
+			index.write( col, begins_with, hash, tr );
 		}
 	}
 	

@@ -8,47 +8,110 @@ import java.util.*;
 
 public class Database {
 	
-	Map<String, Table> tableMap = new HashMap<>();
+	// Database root path (default location for any new Tables)
+	File databaseFolder;
 	
-	String dbName;
-	File dbFolder;
+	// map of Table objects
+	StringMap1D<Table> tableMap = new StringMap1D<>();
+	
+	// constructor
+	public Database ( String f ) {
+		folder( f );
+		link();
+	}
+	
+	// import a Table from a String file path
+	public Database file ( String f ) {
+		file( new File( f ) );
+		return this;
+	}
 
-	// Construct a database from a folder path
-	public Database(String folderPath) {
-		dbFolder = new File(folderPath);
-		dbName = dbFolder.getName();
-		if (dbFolder.exists()) {
-			for (File f : dbFolder.listFiles()) {
-				if (!f.isDirectory()) {
-					Table t = new Table( this, new TableFile( f ) );
-					tableMap.put( t.name(), t );
+	// import a Table from a File object
+	public Database file ( File f ) {
+		if (f.exists()) {
+			Table t = new Table( f );
+			if (t.read()) {
+				System.out.println("Database: loaded table "+t.name);
+				tableMap.write( t.name, t ); // Tables to keep in this PersistentStructure
+			} else System.out.println("Database: ERROR couldn't load table "+t.name);
+		} else System.out.println("Database: ERROR can't find file "+f);
+		return this;
+	}
+
+	// import multiple Tables from a folder
+	public Database folder ( String f ) {
+		folder( new File ( f ) );
+		return this;
+	}
+	
+	// import multiple Tables from a folder
+	public Database folder ( File d ) {
+		if (d.exists()) {
+			databaseFolder = d;
+			for (File f : d.listFiles())
+				if (f.isDirectory() && !f.getName().equals("..") && !f.getName().equals(".")) {
+					System.out.println("Database: reading "+f);
+					folder( f );
+				} else
+					file( f );
+		} else
+			System.out.println("Database: ERROR can't find directory "+d);
+		System.out.println("Database: all tables loaded:\n"+tableMap);
+		return this;
+	}
+	
+	// link all the TableRow objects together by direct links
+	public Database link () {
+		for (String table : tables()) {
+			for (String rowId : rows(table)) {
+				TableRow tr = row(table, rowId);
+				StringMap1D<String> refMap = tr.table.referenceMap;
+				for (String refCol : refMap.keys()) {
+					// if there's a referenced table in the column
+					if (refMap.defined(refCol) && !refMap.read(refCol).equals("")) {
+						String refTable = refMap.read(refCol);
+						String refRow = tr.data(refCol);
+						System.out.println( "Database: reference found "+refTable+", "+refRow );
+						if ( !refRow.equals("") ) {
+							TableRow linked_tr = row(refTable, refRow);
+							linked_tr.link( tr );
+							tr.link( linked_tr );
+						}
+					}
 				}
 			}
-		} else {
-			System.out.println("Database: folder path error: can't find "+folderPath);
 		}
-		System.out.println( "Database: table files loaded: "+tableMap );
+		System.out.println("Database: table row-linking complete.");
+		return this;
 	}
-
-	// Access a table by its name
-	public Table tables (String tableName) {
-		if (tableMap.containsKey(tableName)) {
-			return tableMap.get(tableName);
+	
+	// get a Table object (auto-vivifies)
+	public Table table ( String tableName ) {
+		if (tableMap.defined(tableName)) {
+			return tableMap.read(tableName);
 		} else {
-			return null;
+			File tableFile = new File( databaseFolder, tableName+".csv" );
+			Table t = new Table(tableFile); // won't create an actual file until the first TableRow is appended
+			tableMap.write( t.name, t );
+			System.out.println( "Database: auto-vivified table "+t.name);
+			return t;
 		}
 	}
 	
-	// Create a new table with a TableFile object
-	public Table add (TableFile tf) {
-		Table t = new Table( this, tf );
-		tableMap.put( t.name(), t );
-		return t;
+	// get all Tables
+	public Set<String> tables () {
+		return tableMap.keys();
 	}
 	
-	// Access database name
-	public String name () {
-		return this.dbName;
+	// get a TableRow object (auto-vivifies)
+	public TableRow row ( String table, String rowId ) {
+		return table( table ).row( rowId );
+	}
+	
+	// get all TableRows
+	public Set<String> rows (String table) {
+		return table( table ).rows();
 	}
 
+	
 }

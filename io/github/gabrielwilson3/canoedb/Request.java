@@ -10,7 +10,7 @@ public class Request {
 	String http_request = "";
 	StringTokenizer http_tokens;
 	String query_data = "";
-	String[] rest_array;
+	String[] path_array;
 	
 	public Request ( BufferedReader input ) {
 		
@@ -34,7 +34,7 @@ public class Request {
 		*/
 		
 		// can only do GET requests currently
-		this.get( http_request );
+		get( http_request );
 		
 		/*
 		st = new StringTokenizer( this.http_request );
@@ -63,19 +63,19 @@ public class Request {
 		
 		// Divide up the part before the first '?' (GET /some/path/) using spaces
 		String[] first_array = ques_array[0].split(" ");
-		this.rest_array = first_array[first_array.length-1].split("/");
+		path_array = first_array[first_array.length-1].split("/");
 		
 		// Divide up the part following the last '?' (this=that&it=there HTTP/1.1) using spaces
 		String[] last_array = ques_array[ques_array.length-1].split(" ");
-		this.query_data = last_array[0];
+		query_data = last_array[0];
 	}
 	
 	public String data () {
 		return this.query_data;
 	}
 	
-	public String[] rest () {
-		return this.rest_array;
+	public String[] path () {
+		return this.path_array;
 	}
 	
 }
