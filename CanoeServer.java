@@ -77,60 +77,20 @@ class ClientHandler extends Thread {
 			// Send the Request data to the Query
 			q.parse( r.data() );
 			
-			// Initialize html variables
-			String 			output = "";
-			String 			mime = "text/html";
-			
-			// Execute the query
-			for (String keyword : r.path() ) {
-				switch (keyword) {
-					case "and" :
-						q.and();
-						break;
-					case "or" :
-						q.or();
-						break;
-					case "write" :
-						q.write();
-						break;
-					case "read" :
-						q.read();
-						break;
-					case "columns" :
-						q.columns();
-						break;
-					case "rows" :
-						q.rows();
-						break;
-					case "json" :
-						output += q.outputJSON();
-						mime = "application/json";
-						break;
-					case "csv" :
-						output += q.outputCSV();
-						mime = "text/csv";
-						break;
-					case "" :
-						// send HTML document here
-						output +=
-							"<html><head><title>CanoeDB</title></head><body>"+
-							"<h1>[form HTML here]</h1>"+
-							"</body></html>";
-						mime = "text/html";
-						break;
-				}
-			}
-			
+			// Send each REST command from the Request to the Query
+			for ( String keyword : r.path() ) q.command( keyword );
+
+			// Send the HTTP text string back to the client
 			out.print(
 				"HTTP/1.0 200 OK\r\n"+
-				"Content-type: "+mime+"\r\n"+
-				"\r\n"
+				"Content-type: "+q.mime()+"\r\n"+
+				"\r\n"+
+				q.output()
 			);
-			out.print( output );
 			out.close();
 		}
 		catch (Exception x) {
-			System.out.println("ClientHandler: Thread exception caught.");
+			System.out.println("ClientHandler: thread exception caught.");
 			x.printStackTrace(System.out);
 		}
 	}

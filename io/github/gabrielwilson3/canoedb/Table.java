@@ -182,6 +182,11 @@ class Table {
 		return true;
 	}
 		
+	// columns in Table
+	public String[] columns () {
+		return columns;
+	}
+
 	// referenced Table
 	String reference (String column) {
 		if (referenceMap!=null && referenceMap.defined(column))

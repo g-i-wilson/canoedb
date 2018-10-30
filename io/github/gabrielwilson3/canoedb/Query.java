@@ -22,6 +22,11 @@ public class Query {
 	// database object
 	Database db;	
 	
+	// output String
+	String output = "";
+	// MIME format
+	String mime = "text/html";
+	
 	// DEFAULT SETTINGS
 	// output map (just a reference to either the rowMap or colMap)
 	StringMap3D<String> outputMap = rowMap;
@@ -67,7 +72,7 @@ public class Query {
 					StringMap2D<String> input = ( ANDlogic ? inputTemplate.cloned() : null );
 					if ( tr.read( input, output ) ){
 						// use the "stringified" version of a output HashMap as its key (eliminates any duplicate rows)
-						rowMap.write( output.toString(), output.map() );
+						rowMap.write( output.map.toString(), output.map );
 						System.out.println( "Query: row: "+tr );
 					}
 				}
@@ -76,48 +81,6 @@ public class Query {
 			}
 		}
 		hasExecuted = true;
-		return this;
-	}
-	
-	// set AND logic
-	public Query and() {
-		ANDlogic = true;
-		return this;
-	}
-	
-	// set OR logic
-	public Query or() {
-		ANDlogic = false;
-		return this;
-	}
-	
-	
-	// set Database
-	public Query database(Database d) {
-		db = d;
-		return this;
-	}
-	
-	// set mode to write-read
-	public Query write() {
-		// if we're switching to write and have already executed, then re-execute
-		if(!writeMode && hasExecuted) {
-			writeMode = true;
-			execute();
-		} else writeMode = true;
-		return this;
-	}
-	
-	// set mode to read-only
-	public Query read() {
-		writeMode = false;
-		return this;
-	}
-	
-	// set map to rowMap
-	public Query rows() {
-		// all the data is already in rowMap
-		outputMap = rowMap;
 		return this;
 	}
 	
@@ -144,6 +107,12 @@ public class Query {
 		return this;
 	}
 	
+	// set Database
+	public Query database(Database d) {
+		db = d;
+		return this;
+	}
+	
 	// increment a numerical value held as a String
 	private String incrementNumericalString (String numberString) {
 		try {
@@ -155,44 +124,119 @@ public class Query {
 		}
 	}
 	
-	// Create a JSON string from one of the Map objects
+	// Create a JSON string from the outputMap
 	public String outputJSON () {
 		// make sure we've executed first
 		if(!hasExecuted) execute();
-		
-		String output = "{\n";
-		String a_comma = "\n";
-		for ( String a : outputMap.keys() ) {
-			output += a_comma+"\t\""+a+"\" : {";
-			a_comma = ",\n";
-			String b_comma = "\n";
-			for ( String b : outputMap.keys(a) ) {
-				output += b_comma+"\t\t\""+b+"\" : {";
-				b_comma = ",\n";
-				String c_comma = "\n";
-				for ( String c : outputMap.keys(a,b) ) {
-					try {
-						output += c_comma+"\t\t\t\""+c+"\" : \""+outputMap.read(a,b,c).replace("\"","\\\"")+"\"";
-						c_comma = ",\n";
-						System.out.println( "Query: added data point "+outputMap.read(a,b,c) );
-					} catch (Exception e) {
-						System.out.println( "Query: problem with data point '"+outputMap.read(a,b,c)+"'" );
-						e.printStackTrace(System.out);
-					}
-				}
-				output += "\n\t\t}";
-			}
-			output += "\n\t}";
-		}
-		return output+"\n}";
+		return outputMap.toJSON();
 	}
 
-	// Create a CSV string from one of the Map objects
-	public Query outputCSV () {
+	// Create a CSV string from the outputMap
+	public String outputCSV () {
 		// make sure we've executed first
 		if(!hasExecuted) execute();
+		String csv = "";
+		return csv;
+	}
 
+	// Generate interactive form HTML from the outputMap
+	public String outputForm () {
+		System.out.println("Query: outputing form HTML...");
+		// make sure we've executed first
+		if(!hasExecuted) execute();
+		System.out.println( "Query: outputMap: "+outputMap );
+		// start HTML and start the form table
+		String html = "<html>\n<head>\n<title>CanoeDB</title>\n</head>\n<body>\n<form>\n<table>\n";
+		// loop through all the tables and columns
+		for (String table : db.tables()) {
+			for (String column : db.table(table).columns()) {
+				html += "<tr><td>"+table+"."+column+"<input name=\""+table+"."+column+"\" width=20></tr></td>\n";
+			}
+		}
+		// complete the form table and start the output table
+		html += "</table>\n<input type=\"submit\"></form>\n<br>\n<br>\n<table>\n<tr>";
+		// table headers
+		for (String row : outputMap.keys()) {
+			for (String table : outputMap.keys(row)) {
+				for (String column : outputMap.keys(row, table)) {
+					String colText = table+"."+column;
+					html += "<th>"+colText+"</th>\n";
+				}
+			}
+			break;
+		}
+		html += "</tr>\n";
+		// table rows
+		for (String row : outputMap.keys()) {
+			html += "<tr>\n";
+			for (String table : outputMap.keys(row)) {
+				for (String column : outputMap.keys(row, table)) {
+					html += "<td>"+outputMap.read(row, table, column)+"</td>\n";
+				}
+			}
+			html += "</tr>\n";
+		}
+		// complete the output table and complete HTML
+		html += "</table>\n</body>\n</html>\n";
+		return html;
+	}
+	
+	// Set the output mode for this query
+	public Query command (String c) {
+		System.out.println("Query: command \""+c+"\"");
+		switch (c) {
+			case "and" :
+				ANDlogic = true;
+				break;
+			case "or" :
+				ANDlogic = false;
+				break;
+			case "write" :
+				// if we're switching to write and have already executed, then re-execute
+				if(!writeMode && hasExecuted) {
+					writeMode = true;
+					execute();
+				} else writeMode = true;
+				break;
+			case "read" :
+				writeMode = false;
+				break;
+			case "columns" :
+				outputMap = colMap;
+				// load the colMap
+				columns();
+				break;
+			case "rows" :
+				outputMap = rowMap;
+				break;
+			case "json" :
+				output = outputJSON();
+				mime = "application/json";
+				break;
+			case "csv" :
+				output = outputCSV();
+				mime = "text/csv";
+				break;
+			case "form" :
+				output = outputForm();
+				mime = "text/html";
+				break;
+		}
 		return this;
+	}
+
+	// Get the output String from this query
+	public String output () {
+		if(!hasExecuted) {
+			execute();
+			output = outputForm();
+		}
+		return output;
+	}
+	
+	// Get the MIME format
+	public String mime () {
+		return mime;
 	}
 
 	// Parse the query string as CGI key=value&key=value tuples
@@ -216,7 +260,7 @@ public class Query {
 					System.out.println("Query input: table="+table+", column="+column+", data="+data);
 				}
 			} catch(Exception e) {
-				System.out.println("Didn't understand tuple: "+tuples[i]);
+				System.out.println("Query: didn't understand tuple: "+tuples[i]);
 				//e.printStackTrace(System.out);
 			}
 		}

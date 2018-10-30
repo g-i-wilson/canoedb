@@ -78,11 +78,12 @@ class TableRow {
 		
 		// loop through the inputMap
 		for (String column : inputMap.keys(tableName)) {
-			if ( data.defined(column) ) {
-				// Check to see if there exists a filter that can disqualify this whole tableRow
-				System.out.println( "TableRow: filter defined: "+tableName+", "+column );
+			String filter = inputMap.read(tableName, column);
+			if ( filter!=null && data.defined(column) ) { // filter is null if it's already been used
+				// Check to see if there exists a filter that can disqualify this whole tableRow (that hasn't already been used)
+				System.out.println( "TableRow: filter exists: "+tableName+":"+column );
 				// Look up the inputMap data in the index for this table/column and see if it references back to this table
-				if ( table.search( column, inputMap.read(tableName, column) ).contains(this) ) {
+				if ( table.search( column, filter ).contains(this) ) {
 					System.out.println( "TableRow: filter passed: "+tableName+", "+column );
 					// if filter has been applied and is OK, then it is removed.
 					// this allows us to not have to traverse the entire "virtual tableRow"...
@@ -90,7 +91,7 @@ class TableRow {
 					inputMap.write(tableName, column, null);
 				} else {
 					// if the filter fails, then all we need to do is bail-out by returning false.
-					System.out.println( "TableRow: filter failed: "+tableName+":"+id+" -> "+outputMap.toString() );
+					System.out.println( "TableRow: filter failed: "+tableName+":"+id+"."+column+"==\""+data.read(column)+"\" ? "+inputMap.toString() );
 					return false;
 				}
 			}

@@ -98,7 +98,22 @@ class StringMap1D<T> {
 	
 	@Override
 	public String toString() { 
-		return map.toString(); 
+		return toJSON(); 
+	}
+	
+	String toJSON() {
+		String output = "{\n";
+		String a_comma = "\n";
+		for ( String a : keys() ) {
+			T data = read(a);
+			if (data!=null) {
+				output += a_comma+"\t\""+a+"\" : \""+data.toString().replace("\"","\\\"")+"\"";
+			} else {
+				output += a_comma+"\t\""+a+"\" : null";
+			}
+			a_comma = ",\n";
+		}
+		return output+"\n}";
 	}
 	
 }

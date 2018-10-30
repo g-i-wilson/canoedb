@@ -90,7 +90,28 @@ class StringMap2D<T> {
 	
 	@Override
 	public String toString() { 
-		return map.toString(); 
+		return toJSON(); 
+	}
+	
+	String toJSON() {
+		String output = "{\n";
+		String a_comma = "\n";
+		for ( String a : keys() ) {
+			output += a_comma+"\t\""+a+"\" : {";
+			a_comma = ",\n";
+			String b_comma = "\n";
+			for ( String b : keys(a) ) {
+				T data = read(a,b);
+				if (data!=null) {
+					output += b_comma+"\t\t\""+b+"\" : \""+data.toString().replace("\"","\\\"")+"\"";
+				} else {
+					output += b_comma+"\t\t\""+b+"\" : null";
+				}
+				b_comma = ",\n";
+			}
+			output += "\n\t}";
+		}
+		return output+"\n}";
 	}
 	
 }

@@ -118,7 +118,34 @@ class StringMap3D<T> {
 	
 	@Override
 	public String toString() { 
-		return map.toString(); 
+		return toJSON(); 
+	}
+	
+	String toJSON() {
+		String output = "{\n";
+		String a_comma = "\n";
+		for ( String a : keys() ) {
+			output += a_comma+"\t\""+a+"\" : {";
+			a_comma = ",\n";
+			String b_comma = "\n";
+			for ( String b : keys(a) ) {
+				output += b_comma+"\t\t\""+b+"\" : {";
+				b_comma = ",\n";
+				String c_comma = "\n";
+				for ( String c : keys(a,b) ) {
+					T data = read(a,b,c);
+					if (data!=null) {
+						output += c_comma+"\t\t\t\""+c+"\" : \""+data.toString().replace("\"","\\\"")+"\"";
+					} else {
+						output += c_comma+"\t\t\t\""+c+"\" : null";
+					}
+					c_comma = ",\n";
+				}
+				output += "\n\t\t}";
+			}
+			output += "\n\t}";
+		}
+		return output+"\n}";
 	}
 	
 }

@@ -10,7 +10,7 @@ public class Request {
 	String http_request = "";
 	StringTokenizer http_tokens;
 	String query_data = "";
-	String[] path_array;
+	String[] path_array = new String[]{};
 	
 	public Request ( BufferedReader input ) {
 		
@@ -23,51 +23,28 @@ public class Request {
 			e.printStackTrace( System.out );
 		}
 		
-		/*
-		// read in the HTTP request from the input
-		String line;
-
-		while( (line = input.readLine()) != null ) {
-			http_request += " "+line;
+		// GET request
+		if (http_request.contains("GET /")) {
+			System.out.println("Request: GET");
+			
+			System.out.println("Request: ? found");
+			// Divide up reqest string at the '?'
+			String[] ques_array = http_request.split("\\?");
+			
+			// Divide up the part before the first '?' (GET /some/path/) using spaces
+			String[] first_array = ques_array[0].split(" ");
+			path_array = first_array[first_array.length-1].split("/");
+			
+			// Divide up the part following the last '?' (this=that&it=there HTTP/1.1) using spaces
+			String[] last_array = ques_array[ques_array.length-1].split(" ");
+			query_data = last_array[0];
+			
+		// POST request
+		} else if (http_request.contains("POST /")) {
+			System.out.println("\nCanoeServer: *** currently unable to process POST requests ***\n"+http_request+"\n");
+			
 		}
-		System.out.println( "Request: http_request = "+http_request );
-		*/
 		
-		// can only do GET requests currently
-		get( http_request );
-		
-		/*
-		st = new StringTokenizer( this.http_request );
-		// parse the request string
-		if (st.hasMoreElements()) {
-			String 
-			if( st.nextToken().equalsIgnoreCase("GET") && st.hasMoreElements() ) {
-				String rest_path = st.nextToken();
-				System.out.println( "Request: REST path = "+rest_path );
-				this.get( rest_path );
-			} else if ( st.nextToken().equalsIgnoreCase("POST") && st.hasMoreElements() ) {
-				String post_request = st.nextToken();
-				System.out.println( "Request: POST request = "+post_request );
-				this.post( post_request );
-			}
-        } else {
-          System.out.println( "Request: GET request = "+get_request );
-		}
-		*/
-		
-	}
-	
-	void get ( String get_request ) {
-		// Divide up reqest string at the '?'
-		String[] ques_array = get_request.split("\\?");
-		
-		// Divide up the part before the first '?' (GET /some/path/) using spaces
-		String[] first_array = ques_array[0].split(" ");
-		path_array = first_array[first_array.length-1].split("/");
-		
-		// Divide up the part following the last '?' (this=that&it=there HTTP/1.1) using spaces
-		String[] last_array = ques_array[ques_array.length-1].split(" ");
-		query_data = last_array[0];
 	}
 	
 	public String data () {
@@ -77,5 +54,9 @@ public class Request {
 	public String[] path () {
 		return this.path_array;
 	}
-	
+
+	public String request () {
+		return this.http_request;
+	}
+		
 }
