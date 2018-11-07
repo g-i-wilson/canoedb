@@ -59,16 +59,18 @@ class TableRow {
 	}
 	
 	
-	// "kick-off" method, that creates the tablesTraversed object invokes the traverse method
+	// READ UPHILL traverse (recursive)
 	void read ( 
 		StringMap2D<String> inputTemplate,
 		StringMap2D<String> outputTemplate,
-		StringMap3D<String> rowMap
+		StringMap3D<String> rowMap,
+		StringMap1D<String> queryProperties
 	) {
 		if (from.size() > 0) {
 			// start traversing uphill toward an unknown number of peaks
 			for (TableRow tr : from) {
-				tr.read( inputTemplate, outputTemplate, rowMap );
+				System.out.println( "TableRow: / UPHILL: "+table.name+":"+id+" -> "+tr.table.name+":"+tr.id );
+				tr.read( inputTemplate, outputTemplate, rowMap, queryProperties );
 			}
 		} else {
 			// start traversing downhill from this peak
@@ -77,63 +79,75 @@ class TableRow {
 			List<Table> tablesTraversed = new ArrayList<>();
 			// loop through each path downhill from this peak
 			for (TableRow tr : to) {
-				if (traverseRead( inputMap, outputMap, tablesTraversed )) {
-					rowMap.write( outputMap.map.toString(), outputMap.map );
+				System.out.println( "TableRow: * PEAK: "+table.name+":"+id );
+				// AND logic can fail at this point (OR logic always passes)
+				if (traverseRead( inputMap, outputMap, tablesTraversed, queryProperties )) {
+					// XOR logic can fail at this point (needs at least one "xor_fail" or it fails)
+					if (queryProperties.read("logic").equals("xor")) {
+						if (queryProperties.exists("xor_fail")) {
+							// add to rowMap if XOR passes
+							rowMap.write( outputMap.map.toString(), outputMap.map );
+						}
+					} else {
+						// add to rowMap if AND/OR passes
+						rowMap.write( outputMap.map.toString(), outputMap.map );
+					}
 				}
 			}
 		}
 	}
 	
-	// Traverse method that starts at each "peak" and traverses down-hill to create an entire virtual row
+	// READ DOWNHILL traverse (recursive)
 	private boolean traverseRead (
 		StringMap2D<String> inputMap, // transitions: populated -> null
 		StringMap2D<String> outputMap, // transitions: null -> populated
-		List<Table> tablesTraversed
+		List<Table> tablesTraversed,
+		StringMap1D<String> queryProperties
 	) {
 		// name of this table
 		String tableName = table.name;
-		
-		// log this traversal
-		System.out.println( "TableRow: traversing "+tableName+":"+id );
 		
 		// record a reference to this table
 		if (table!=null) tablesTraversed.add( table );
 		
 		// loop through input filters (if they exist)
-		if (inputMap!=null) {
-			// loop through the inputMap
-			for (String column : inputMap.keys(tableName)) {
-				String filter = inputMap.read(tableName, column);
-				//if ( filter!=null && data.defined(column) ) { // filter is null if it's already been used
-				if ( data.defined(column) ) { // filter is null if it's already been used
-					// Check to see if there exists a filter that can disqualify this whole tableRow (that hasn't already been used)
-					System.out.println( "TableRow: filter exists: "+tableName+":"+column );
-					// Look up the inputMap data in the index for this table/column and see if it references back to this table
+		for (String column : inputMap.keys(tableName)) {
+			String filter = inputMap.read(tableName, column);
+			//if ( filter!=null && data.defined(column) ) { // filter is null if it's already been used
+			if ( data.defined(column) ) { // filter is null if it's already been used
+				System.out.println( "TableRow: filter defined: "+tableName+"."+column );
+				// AND logic (must pass all filters)
+				if (queryProperties.read("logic").equals("and")) {
 					if ( table.search( column, filter, false ).contains(this) ) {
-						System.out.println( "TableRow: filter passed: "+tableName+", "+column );
-						// if filter has been applied and is OK, then it is removed.
-						// this allows us to not have to traverse the entire "virtual tableRow"...
-						// ...if all filters have been used up and all results have been filled in.
+						System.out.println( "TableRow: filter PASSED (AND): "+filter );
 						inputMap.write(tableName, column, null);
 					} else {
-						// if the filter fails, then disqualify this whole traverse and return false
-						System.out.println( "TableRow: filter failed: "+tableName+":"+id+"."+column+"==\""+data.read(column)+"\" ? "+inputMap.toString() );
+						System.out.println( "TableRow: filter FAILED (AND): "+filter );
 						return false;
 					}
+				// XOR logic (must fail at least once)
+				} else if (queryProperties.read("logic").equals("xor")) {
+					if ( table.search( column, filter, false ).contains(this) ) {
+						System.out.println( "TableRow: filter PASSED (XOR): "+filter );
+						inputMap.write(tableName, column, null);
+					} else {
+						System.out.println( "TableRow: filter FAILED (XOR): "+filter );
+						queryProperties.write("xor_fail",null);
+					}
 				}
-				
-				// are we done yet?
-				if ( outputMap.noNulls() && inputMap.allNulls() ) return true;
+				// OR logic (all filters ignored)
 			}
+			
+			// are we done yet?
+			if ( outputMap.noNulls() && inputMap.allNulls() ) return true;
 		}
 		
-		// loop through the outputMap
+		// loop through the output blanks
 		for (String column : outputMap.keys(tableName)) {
-			System.out.println("TableRow: column data: "+data.read(column));
 			if ( data.defined(column) ) {
 				// record the data as a key
 				outputMap.write(tableName, column, data.read(column));
-				System.out.println( "TableRow: outputMap: "+column+", "+data.read(column) );
+				//System.out.println( "TableRow: wrote to outputMap: "+column+", "+data.read(column) );
 			}
 			
 			// are we done yet?
@@ -143,12 +157,11 @@ class TableRow {
 		
 		// traverse downhill through each "to" link
 		for (TableRow tr : to) {
-			System.out.println( "TableRow: TO "+tr.table.name+":"+tr.id+" FROM "+tableName+":"+id );
-			
 			// Make sure the row hasn't already been traversed (no endless loops allowed):
 			if (tr.table==null || !tablesTraversed.contains(tr.table)) {
+				System.out.println( "TableRow: \\ DOWNHILL: "+tableName+":"+id+" -> "+tr.table.name+":"+tr.id );
 				// Call the referenced tableRow (fast-tracking any false return);
-				if (! tr.traverseRead( inputMap, outputMap, tablesTraversed ) ) return false;
+				if (! tr.traverseRead( inputMap, outputMap, tablesTraversed, queryProperties ) ) return false;
 				// are we done yet?
 				//if ( outputMap.noNulls() && inputMap.allNulls() ) return true;
 			}

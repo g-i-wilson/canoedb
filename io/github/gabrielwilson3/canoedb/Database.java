@@ -76,9 +76,9 @@ public class Database {
 						if ( !refRow.equals("") ) {
 							TableRow linked_tr = row(refTable, refRow);
 							// link to
-							tr.to( linked_tr );
+							if (!tr.to.contains(linked_tr)) tr.to( linked_tr );
 							// link from
-							linked_tr.from( tr );
+							if (!linked_tr.from.contains(tr)) linked_tr.from( tr );
 						}
 					}
 				}

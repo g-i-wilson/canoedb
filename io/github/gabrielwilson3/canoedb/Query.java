@@ -33,12 +33,16 @@ public class Query {
 	// flags
 	boolean writeMode 	= false;
 	boolean hasExecuted	= false;
-	boolean ANDlogic 	= true; // inclusive (OR) or exclusive (AND) -- default is AND
+	// properties
+	StringMap1D<String> queryProperties = new StringMap1D<>();
 	
 	
 	// Constructor
 	public Query (Database d) {
+		// set Database object
 		db = d;
+		// default properties
+		queryProperties.write( "logic", "and" ); // and | or | xor
 	}
 	
 	// Add an output
@@ -71,10 +75,8 @@ public class Query {
 				for (TableRow tr : db.table(table).search(column, data, writeMode)) {
 					// in write mode, may return a table row that's not there yet.  when the "virtual" row is complete, then will need to be appended
 					System.out.println( "Query: row: "+tr );
-					tr.read( ( ANDlogic ? inputTemplate : null ), outputTemplate, rowMap );
+					tr.read( inputTemplate, outputTemplate, rowMap, queryProperties.cloned() );
 				}
-				// we only need the first filter (i.e. first set of "stem" rows from search) under AND logic
-				if (ANDlogic) break;
 			}
 		}
 		hasExecuted = true;
@@ -94,7 +96,7 @@ public class Query {
 
 	// set map to colMap, and re-map data
 	public Query columns() {
-		colMap = new StringMap3D<>();
+		colMap = new StringMap3D<String>();
 		// make sure we've executed first
 		if(!hasExecuted) execute();
 		// map data from rowMap into colMap
@@ -107,9 +109,9 @@ public class Query {
 				}
 			}
 		}
-		System.out.println( "Query: rowMap: "+rowMap );
-		System.out.println( "Query: colMap: "+colMap );
-		System.out.println( "Query: outputMap: "+outputMap );
+		//System.out.println( "Query: rowMap: "+rowMap );
+		//System.out.println( "Query: colMap: "+colMap );
+		//System.out.println( "Query: outputMap: "+outputMap );
 		return this;
 	}
 	
@@ -141,7 +143,7 @@ public class Query {
 		if(!hasExecuted) execute();
 		// also map the data into columns
 		columns();
-		System.out.println( "Query: outputMap: "+outputMap );
+		//System.out.println( "Query: outputMap: "+outputMap );
 		// start HTML and start the form table
 		String html = 
 			"<html>\n<head>\n<title>CanoeDB</title>\n<style>\n"+
@@ -201,10 +203,13 @@ public class Query {
 		System.out.println("Query: command \""+c+"\"");
 		switch (c) {
 			case "and" :
-				ANDlogic = true;
+				queryProperties.write("logic","and");
 				break;
 			case "or" :
-				ANDlogic = false;
+				queryProperties.write("logic","or");
+				break;
+			case "xor" :
+				queryProperties.write("logic","xor");
 				break;
 			case "write" :
 				// if we're switching to write and have already executed, then re-execute
@@ -217,24 +222,24 @@ public class Query {
 				writeMode = false;
 				break;
 			case "columns" :
-				outputMap = colMap;
 				// load the colMap
 				columns();
+				outputMap = colMap;
 				break;
 			case "rows" :
 				outputMap = rowMap;
 				break;
 			case "json" :
 				output = outputJSON();
-				mime = "application/json";
+				mime = "application/json; charset=utf-8";
 				break;
 			case "csv" :
 				output = outputCSV();
-				mime = "text/csv";
+				mime = "text/csv; charset=utf-8";
 				break;
 			case "form" :
 				output = outputForm();
-				mime = "text/html";
+				mime = "text/html; charset=utf-8";
 				break;
 		}
 		return this;
