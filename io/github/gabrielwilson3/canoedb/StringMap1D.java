@@ -2,7 +2,7 @@ package io.github.gabrielwilson3.canoedb;
 
 import java.util.*;
 
-class StringMap1D<T> {
+public class StringMap1D<T> {
 
 	Map<String, T> map = new LinkedHashMap<>();
 	Set<String> null_set = new LinkedHashSet<>();
@@ -102,7 +102,7 @@ class StringMap1D<T> {
 	}
 	
 	String toJSON() {
-		String output = "{\n";
+		String output = "{";
 		String a_comma = "\n";
 		for ( String a : keys() ) {
 			T data = read(a);

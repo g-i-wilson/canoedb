@@ -16,7 +16,7 @@ public class Query {
 	// table -> column -> data
 	StringMap2D<String> inputTemplate = new StringMap2D<>();
 	// output
-	// table -> column -> null
+	// table -> column -> data
 	StringMap2D<String> outputTemplate = new StringMap2D<>();
 		
 	// database object
@@ -43,13 +43,14 @@ public class Query {
 	
 	// Add an output
 	public Query output (String table, String column) {
-		outputTemplate.write( table, column, null );
+		outputTemplate.vivify( table, column );
 		return this;
 	}
 	
 	// Add an input
 	public Query input (String table, String column, String data) {
 		inputTemplate.write( table, column, data );
+		outputTemplate.vivify( table, column );
 		return this;
 	}
 	
@@ -67,49 +68,16 @@ public class Query {
 		for (String table : inputTemplate.keys()) {
 			for (String column : inputTemplate.keys(table)) {
 				String data = inputTemplate.read(table, column);
-				for (TableRow tr : db.table(table).search(column, data)) {
-					StringMap2D<String> output = outputTemplate.cloned();
-					StringMap2D<String> input = ( ANDlogic ? inputTemplate.cloned() : null );
-					if ( tr.read( input, output ) ){
-						// use the "stringified" version of a output HashMap as its key (eliminates any duplicate rows)
-						rowMap.write( output.map.toString(), output.map );
-						System.out.println( "Query: row: "+tr );
-					}
+				for (TableRow tr : db.table(table).search(column, data, writeMode)) {
+					// in write mode, may return a table row that's not there yet.  when the "virtual" row is complete, then will need to be appended
+					System.out.println( "Query: row: "+tr );
+					tr.read( ( ANDlogic ? inputTemplate : null ), outputTemplate, rowMap );
 				}
-				// we only need the first filter (i.e. first set of "stem" rows) under AND logic
+				// we only need the first filter (i.e. first set of "stem" rows from search) under AND logic
 				if (ANDlogic) break;
 			}
 		}
 		hasExecuted = true;
-		return this;
-	}
-	
-	// set map to colMap, and re-map data
-	public Query columns() {
-		colMap = new StringMap3D<>();
-		// make sure we've executed first
-		if(!hasExecuted) execute();
-		// map data from rowMap into colMap
-		for ( String row : rowMap.keys() ) {
-			for ( String table : rowMap.keys(row) ) {
-				for ( String column : rowMap.keys(row, table) ) {
-					String rowData = rowMap.read(row, table, column);
-					String colData = colMap.read(table, column, rowData);
-					colMap.write(table, column, rowData, incrementNumericalString(colData) );
-				}
-			}
-		}
-		// route output from colMap
-		outputMap = colMap;
-		System.out.println( "Query: rowMap: "+rowMap );
-		System.out.println( "Query: colMap: "+colMap );
-		System.out.println( "Query: outputMap: "+outputMap );
-		return this;
-	}
-	
-	// set Database
-	public Query database(Database d) {
-		db = d;
 		return this;
 	}
 	
@@ -122,6 +90,33 @@ public class Query {
 		} catch (Exception e) {
 			return "1";
 		}
+	}
+
+	// set map to colMap, and re-map data
+	public Query columns() {
+		colMap = new StringMap3D<>();
+		// make sure we've executed first
+		if(!hasExecuted) execute();
+		// map data from rowMap into colMap
+		for ( String row : rowMap.keys() ) {
+			for ( String table : rowMap.keys(row) ) {
+				for ( String column : rowMap.keys(row, table) ) {
+					String rowData = rowMap.read(row, table, column);
+					String colData = colMap.read(table, column, rowData);
+					colMap.write( table, column, rowData, incrementNumericalString(colMap.read(table,column,rowData)) );
+				}
+			}
+		}
+		System.out.println( "Query: rowMap: "+rowMap );
+		System.out.println( "Query: colMap: "+colMap );
+		System.out.println( "Query: outputMap: "+outputMap );
+		return this;
+	}
+	
+	// set Database
+	public Query database(Database d) {
+		db = d;
+		return this;
 	}
 	
 	// Create a JSON string from the outputMap
@@ -144,23 +139,43 @@ public class Query {
 		System.out.println("Query: outputing form HTML...");
 		// make sure we've executed first
 		if(!hasExecuted) execute();
+		// also map the data into columns
+		columns();
 		System.out.println( "Query: outputMap: "+outputMap );
 		// start HTML and start the form table
-		String html = "<html>\n<head>\n<title>CanoeDB</title>\n</head>\n<body>\n<form>\n<table>\n";
+		String html = 
+			"<html>\n<head>\n<title>CanoeDB</title>\n<style>\n"+
+			"body { font-family:sans-serif; }"+
+			"div { width:100%; overflow-x:auto; overflow-y:hidden; }\n"+
+			"table { border-collapse:collapse; table-layout:fixed; }\n"+
+			"th, td { padding:10px; text-align:left; }\n"+
+			//"table td {border:solid 1px #eee; word-wrap:break-word;}\n"+
+			//"table th {border:solid 1px #eee; word-wrap:break-word;}\n"+
+			"</style></head>\n<body>\n<div>\n<form id=\"main_form\">\n<table>\n<tr>\n";
 		// loop through all the tables and columns
 		for (String table : db.tables()) {
+			System.out.println("Query: table columns: "+table+" "+db.table(table).columns());
 			for (String column : db.table(table).columns()) {
-				html += "<tr><td>"+table+"."+column+"<input name=\""+table+"."+column+"\" width=20></tr></td>\n";
+				html +=
+					"<td>"+table+"<br>"+column+"<br>"+
+					"<input name=\""+table+"."+column+"\" list=\""+table+"."+column+"_list\" "+
+					"value=\""+(inputTemplate.read(table, column)!=null ? inputTemplate.read(table, column) : "")+"\" "+
+					"onchange=\"document.getElementById('main_form').submit()\" "+
+					"size=5>\n"+
+					"</td>\n<datalist id=\""+table+"."+column+"_list\">\n";
+				for (String data : colMap.keys(table, column)) {
+					html += "<option value=\""+data+"\">\n";
+				}
+				html += "</datalist>\n";
 			}
 		}
 		// complete the form table and start the output table
-		html += "</table>\n<input type=\"submit\"></form>\n<br>\n<br>\n<table>\n<tr>";
+		html += "</tr>\n</table>\n</form>\n</div>\n<br>\n<div>\n<table>\n<tr>";
 		// table headers
 		for (String row : outputMap.keys()) {
 			for (String table : outputMap.keys(row)) {
 				for (String column : outputMap.keys(row, table)) {
-					String colText = table+"."+column;
-					html += "<th>"+colText+"</th>\n";
+					html += "<th>"+table+"<br>"+column+"</th>\n";
 				}
 			}
 			break;
@@ -177,7 +192,7 @@ public class Query {
 			html += "</tr>\n";
 		}
 		// complete the output table and complete HTML
-		html += "</table>\n</body>\n</html>\n";
+		html += "</table>\n</div>\n</body>\n</html>\n";
 		return html;
 	}
 	

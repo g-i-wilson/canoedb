@@ -2,7 +2,7 @@ package io.github.gabrielwilson3.canoedb;
 
 import java.util.*;
 
-class StringMap3D<T> {
+public class StringMap3D<T> {
 
 	Map<String, Map<String, Map<String, T>>> map = new LinkedHashMap<>();
 	Set<String> null_set = new LinkedHashSet<>();
@@ -11,81 +11,97 @@ class StringMap3D<T> {
 		return map;
 	}
 	
-	void write (String a, String b, String c, T t) {
+	public void write (String a, String b, String c, T t) {
 		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, Map<String, T>>());
 		if (! map.get(a).containsKey(b)) map.get(a).put(b, new LinkedHashMap<String, T>());
 		map.get(a).get(b).put(c, t);
 	}
 	
-	void write (String a, Map<String, Map<String, T>> m) {
+	public void write (String a, Map<String, Map<String, T>> m) {
 		map.put(a, m);
 	}
 	
-	void write (String a, String b, Map<String, T> m) {
+	public void write (String a, String b, Map<String, T> m) {
 		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, Map<String, T>>());
 		map.get(a).put(b, m);
 	}
 	
+	// vivify
+	public void vivify (String a) {
+		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, Map<String, T>>());
+	}
+	public void vivify (String a, String b) {
+		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, Map<String, T>>());
+		if (! map.get(a).containsKey(b)) map.get(a).put(b, new LinkedHashMap<String, T>());
+	}
+	public void vivify (String a, String b, String c) {
+		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, Map<String, T>>());
+		if (! map.get(a).containsKey(b)) map.get(a).put(b, new LinkedHashMap<String, T>());
+		map.get(a).get(b).put(c, null);
+	}
+	
 	// element exists, but it might be null (all we know is the key is there)
-	boolean exists (String a) {
+	public boolean exists (String a) {
 		if( map.containsKey(a) )
 			return true;
 		return false;
 	}
-	boolean exists (String a, String b) {
+	public boolean exists (String a, String b) {
 		if( map.containsKey(a) && map.get(a).containsKey(b) )
 			return true;
 		return false;
 	}
-	boolean exists (String a, String b, String c) {
+	public boolean exists (String a, String b, String c) {
 		if( map.containsKey(a) && map.get(a).containsKey(b) && map.get(a).get(b).containsKey(c) )
 			return true;
 		return false;
 	}
-	
+
 	// element exists + contains something (it's not null)
-	boolean defined (String a, String b, String c) {
+	public boolean defined (String a, String b, String c) {
 		if( map.containsKey(a) && map.get(a).containsKey(b) && map.get(a).get(b).containsKey(c) && map.get(a).get(b).get(c)!=null )
 			return true;
 		return false;
 	}
 	
 	// returns the reference to the object (or null)
-	Map<String, Map<String, T>> read (String a) {
+	public Map<String, Map<String, T>> read (String a) {
 		if( map.containsKey(a) )
 			return map.get(a);
 		return null;
 	}
-	Map<String, T> read (String a, String b) {
+	public Map<String, T> read (String a, String b) {
 		if( map.containsKey(a) && map.get(a).containsKey(b) )
 			return map.get(a).get(b);
 		return null;
 	}
-	T read (String a, String b, String c) {
+	public T read (String a, String b, String c) {
 		if( map.containsKey(a) && map.get(a).containsKey(b) && map.get(a).get(b).containsKey(c) )
 			return map.get(a).get(b).get(c);
 		return null;
 	}
 	
-	Set<String> keys () {
+	public Set<String> keys () {
 		return map.keySet();
 	}
 	
-	Set<String> keys(String a) {
+	public Set<String> keys(String a) {
 		if (! map.containsKey(a)) return null_set;
 		return map.get(a).keySet();
 	}
 	
-	Set<String> keys(String a, String b) {
+	public Set<String> keys(String a, String b) {
 		if (! map.containsKey(a)) return null_set;
 		if (! map.get(a).containsKey(b)) return null_set;
 		return map.get(a).get(b).keySet();
 	}
 	
-	StringMap3D cloned () {
-		StringMap3D cloned = new StringMap3D();
+	public StringMap3D<T> cloned () {
+		StringMap3D<T> cloned = new StringMap3D<>();
 		for ( String a : this.keys() ) {
+			cloned.vivify(a);
 			for ( String b : this.keys(a) ) {
+				cloned.vivify(a,b);
 				for ( String c : this.keys(a,b) ) {
 					cloned.write( a, b, c, this.read(a,b,c) );
 				}
@@ -94,7 +110,7 @@ class StringMap3D<T> {
 		return cloned;
 	}
 	
-	boolean allNulls () {
+	public boolean allNulls () {
 		for ( String a : this.keys() ) {
 			for ( String b : this.keys(a) ) {
 				for ( String c : this.keys(a,b) ) {
@@ -105,7 +121,7 @@ class StringMap3D<T> {
 		return true;
 	}
 	
-	boolean noNulls () {
+	public boolean noNulls () {
 		for ( String a : this.keys() ) {
 			for ( String b : this.keys(a) ) {
 				for ( String c : this.keys(a,b) ) {
@@ -121,8 +137,8 @@ class StringMap3D<T> {
 		return toJSON(); 
 	}
 	
-	String toJSON() {
-		String output = "{\n";
+	public String toJSON() {
+		String output = "{";
 		String a_comma = "\n";
 		for ( String a : keys() ) {
 			output += a_comma+"\t\""+a+"\" : {";
@@ -147,5 +163,5 @@ class StringMap3D<T> {
 		}
 		return output+"\n}";
 	}
-	
+		
 }

@@ -33,6 +33,7 @@ public class Database {
 			if (t.read()) {
 				System.out.println("Database: loaded table "+t.name);
 				tableMap.write( t.name, t ); // Tables to keep in this PersistentStructure
+				System.out.println("Database: data in "+t.name+": "+t.tableIndex.index.toString());
 			} else System.out.println("Database: ERROR couldn't load table "+t.name);
 		} else System.out.println("Database: ERROR can't find file "+f);
 		return this;
@@ -74,8 +75,10 @@ public class Database {
 						System.out.println( "Database: reference found "+refTable+", "+refRow );
 						if ( !refRow.equals("") ) {
 							TableRow linked_tr = row(refTable, refRow);
-							linked_tr.link( tr );
-							tr.link( linked_tr );
+							// link to
+							tr.to( linked_tr );
+							// link from
+							linked_tr.from( tr );
 						}
 					}
 				}

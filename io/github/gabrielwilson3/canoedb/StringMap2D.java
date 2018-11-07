@@ -2,7 +2,7 @@ package io.github.gabrielwilson3.canoedb;
 
 import java.util.*;
 
-class StringMap2D<T> {
+public class StringMap2D<T> {
 
 	Map<String, Map<String, T>> map = new LinkedHashMap<>();
 	Set<String> null_set = new LinkedHashSet<>();
@@ -18,6 +18,15 @@ class StringMap2D<T> {
 	
 	void write (String a, Map<String, T> m) {
 		map.put(a, m);
+	}
+	
+	// vivify
+	public void vivify (String a) {
+		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, T>());
+	}
+	public void vivify (String a, String b) {
+		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, T>());
+		map.get(a).put(b, null);
 	}
 	
 	// element exists, but it might be null (all we know is the key is there)
@@ -60,8 +69,8 @@ class StringMap2D<T> {
 		return map.get(a).keySet();
 	}
 	
-	StringMap2D cloned () {
-		StringMap2D cloned = new StringMap2D();
+	StringMap2D<T> cloned () {
+		StringMap2D<T> cloned = new StringMap2D<>();
 		for ( String a : this.keys() ) {
 			for ( String b : this.keys(a) ) {
 				cloned.write( a, b, this.read(a,b) );
@@ -94,7 +103,7 @@ class StringMap2D<T> {
 	}
 	
 	String toJSON() {
-		String output = "{\n";
+		String output = "{";
 		String a_comma = "\n";
 		for ( String a : keys() ) {
 			output += a_comma+"\t\""+a+"\" : {";

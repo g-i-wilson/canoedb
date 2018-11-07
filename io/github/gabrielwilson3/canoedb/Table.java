@@ -36,6 +36,9 @@ class Table {
 	// null set
 	Set<String>				null_set = new LinkedHashSet<>();
 	
+	// null_collection
+	Collection<TableRow> 	null_collection = new ArrayList<>();
+	
 
 	// set the physical file
 	Table ( String filePath ) {
@@ -61,24 +64,25 @@ class Table {
 		// read CSV file
 		try (Scanner sc = new Scanner(tableFile, "UTF-8")) {
 			// initialize the basic table info maps
-			columns			= removeFirst( decodeArray(sc.nextLine().split(",")) );
+			columns			= removeFirst( decodeLine(sc.nextLine()) );
 			columnMap		= blankMap( columns );
-			referenceMap	= twoArraysMap( columns, removeFirst(decodeArray(sc.nextLine().split(","))) );
-			onReadMap		= twoArraysMap( columns, removeFirst(decodeArray(sc.nextLine().split(","))) );
-			onWriteMap		= twoArraysMap( columns, removeFirst(decodeArray(sc.nextLine().split(","))) );
+			referenceMap	= twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
+			onReadMap		= twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
+			onWriteMap		= twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
 			fileExists = true;
 			// Loop through lines and fill fileMap with TableRow objects
 			while (sc.hasNextLine()) {
 				// read a CSV data line: id,data1,dataN
-				String[] 	data 	= decodeArray( sc.nextLine().split(",") );
+				String[] 	data 	= decodeLine( sc.nextLine() );
 				String 		rowId 	= data[0];
 				String[] 	rowData = removeFirst( data );
 				// spawn a TableRow
 				TableRow 	tr 		= new TableRow( this, rowId, twoArraysMap( columns, rowData ) );
-				System.out.println("Table: read row "+tr.data.toString());
+				//System.out.println("Table: read row "+tr.data.toString());
 				checkRowId( tr.id );
 				logTableRow( tr );
 			}
+			System.out.println("Table: rows: "+rowIdMap.toString());
 			// Scanner suppresses io exceptions
 			if (sc.ioException() != null) System.out.println( "Table: file io exception: "+sc.ioException() );
 		} catch (Exception e) {
@@ -98,9 +102,19 @@ class Table {
 	}
 	
 	// get a map of TableRow objects based on column -> data_fragment
-	Collection<TableRow> search (String column, String dataFragment) {
+	Collection<TableRow> search (String column, String dataFragment, boolean writeMode) {
 		System.out.println( "Table: index input: "+column+","+dataFragment );
-		return tableIndex.search( column, dataFragment );
+		Collection<TableRow> results = tableIndex.search( column, dataFragment );
+		if (results!=null) {
+			return results;
+		} else if (writeMode) {
+			TableRow tr = row();
+			tr.update( column, dataFragment );
+			tableIndex.write(tr);
+			return tableIndex.search( column, dataFragment ); // must return non-null now...
+		} else {
+			return null_collection;
+		}
 	}
 	
 	// Creates a new table row (virtual; not yet appended)
@@ -284,7 +298,8 @@ class Table {
 	}
 	
 	// decode (embedded commas)
-	private String[] decodeArray (String[] a) {
+	private String[] decodeLine (String line) {
+		String[] a = line.replace("\r","").replace("\n","").split(",");
 		for (int i=0; i<a.length; i++) {
 			a[i] = a[i].replace( "%2C", "," );
 		}

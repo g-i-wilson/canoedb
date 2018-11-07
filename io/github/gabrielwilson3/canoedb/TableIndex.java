@@ -11,18 +11,15 @@ class TableIndex {
 	// column -> datafragment -> rowData -> TableRowObject (ignores duplicate rows)
 	StringMap3D<TableRow> index = new StringMap3D<>();
 
-	// null_collection
-	Collection<TableRow> 	null_collection = new ArrayList<>();
-
 
 	TableIndex write (TableRow tr) {
 		for (String column : tr.data.keys()) {
 			String columnData = tr.data(column);
 			// index the entire data string
-			indexData( column, columnData, tr.data.toString(), tr );
+			indexData( column, columnData, tr.data.map.toString(), tr );
 			// index each "word" in the data string
-			for (String word : columnData.split(" ")) {
-				if (!word.equals("")) indexData( column, word, tr.data.toString(), tr );
+			for (String word : columnData.split("\\W+")) {
+				if (!word.equals("")) indexData( column, word, tr.data.map.toString(), tr );
 			}
 		
 		}
@@ -35,9 +32,9 @@ class TableIndex {
 		if (index.exists(col, dataFragment)) {
 			return index.read(col, dataFragment).values();
 		} else {
-			// otherwise just return the null
+			// otherwise just return null
 			System.out.println( "TableIndex: no TableRow objects found for: "+col+", "+dataFragment );
-			return null_collection;
+			return null;
 		}
 	}
 	
