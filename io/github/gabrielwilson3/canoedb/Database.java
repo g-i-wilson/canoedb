@@ -115,6 +115,34 @@ public class Database {
 	public Set<String> rows (String table) {
 		return table( table ).rows();
 	}
+	
+	// run a read or write-read query using a Query object
+	void execute ( Query q ) {
+		for (String t : q.inputTemplate.keys()) {
+			for (String c : q.inputTemplate.keys( t )) {
+				// get the first data fragment from inputTemplate
+				String data = q.inputTemplate.read( t, c );
+				Collection<TableRow> results = table( t ).search( c, data );
+				// if no search results from its table, then if write-mode, create a new TableRow
+				if (q.write && results.size()==0) {
+					TableRow tr = table( t ).row();
+					for (String col : q.inputTemplate.keys( t ))
+						tr.update( col, q.inputTemplate.read( t, c ) );
+					// ************ create new linked TableRows here *************
+				}
+				// loop through the TableRows in the search results and populate the Query object
+				for (TableRow tr : results) {
+					System.out.println( "Database: querying row: "+tr );
+					tr.read( q );
+				}
+			}
+		}
+	}
+	
+	// create a new Query
+	public Query query () {
+		return new Query( this );
+	}
 
 	
 }

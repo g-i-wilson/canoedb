@@ -60,29 +60,23 @@ class TableRow {
 	
 	
 	// READ UPHILL traverse (recursive)
-	void read ( 
-		StringMap2D<String> inputTemplate,
-		StringMap2D<String> outputTemplate,
-		StringMap3D<String> rowMap,
-		StringMap1D<String> queryProperties
-	) {
+	void read ( Query q ) {
 		if (from.size() > 0) {
 			// start traversing uphill toward an unknown number of peaks
 			for (TableRow tr : from) {
 				System.out.println( "TableRow: / UPHILL: "+table.name+":"+id+" -> "+tr.table.name+":"+tr.id );
-				tr.read( inputTemplate, outputTemplate, rowMap, queryProperties );
+				tr.read( q );
 			}
 		} else {
 			// start traversing downhill from this peak
-			StringMap2D<String> inputMap = inputTemplate.cloned();
-			StringMap2D<String> outputMap = outputTemplate.cloned();
+			StringMap2D<String> inputMap = q.inputTemplate.cloned();
+			StringMap2D<String> outputMap = q.outputTemplate.cloned();
 			List<Table> tablesTraversed = new ArrayList<>();
 			// loop through each path downhill from this peak
 			for (TableRow tr : to) {
 				System.out.println( "TableRow: * PEAK: "+table.name+":"+id );
-				if (traverseRead( inputMap, outputMap, tablesTraversed, queryProperties )) {
-						// add to rowMap
-						rowMap.write( outputMap.map.toString(), outputMap.map );
+				if (traverseRead( inputMap, outputMap, tablesTraversed, q )) {
+					q.rowMap.write( outputMap.map.toString(), outputMap.map );
 				}
 			}
 		}
@@ -93,7 +87,7 @@ class TableRow {
 		StringMap2D<String> inputMap, // transitions: populated -> null
 		StringMap2D<String> outputMap, // transitions: null -> populated
 		List<Table> tablesTraversed,
-		StringMap1D<String> queryProperties
+		Query q
 	) {
 		// name of this table
 		String tableName = table.name;
@@ -108,8 +102,8 @@ class TableRow {
 			if ( data.defined(column) ) { // filter is null if it's already been used
 				System.out.println( "TableRow: filter defined: "+tableName+"."+column );
 				// AND logic (must pass all filters)
-				if (queryProperties.read("logic").equals("and")) {
-					if ( table.search( column, filter, false ).contains(this) ) {
+				if (q.logic.equals("and")) {
+					if ( table.search( column, filter ).contains(this) ) {
 						System.out.println( "TableRow: filter PASSED (AND): "+filter );
 						inputMap.write(tableName, column, null);
 					} else {
@@ -117,14 +111,13 @@ class TableRow {
 						return false;
 					}
 				// XOR logic (must fail all filters)
-				} else if (queryProperties.read("logic").equals("xor")) {
-					if ( table.search( column, filter, false ).contains(this) ) {
+				} else if (q.logic.equals("xor")) {
+					if ( table.search( column, filter ).contains(this) ) {
 						System.out.println( "TableRow: filter PASSED (bad) (XOR): "+filter );
 						inputMap.write(tableName, column, null);
 						return false;
 					} else {
 						System.out.println( "TableRow: filter FAILED (good) (XOR): "+filter );
-						queryProperties.write("xor_fail",null);
 					}
 				}
 				// OR logic (all filters ignored)
@@ -153,7 +146,7 @@ class TableRow {
 			if (tr.table==null || !tablesTraversed.contains(tr.table)) {
 				System.out.println( "TableRow: \\ DOWNHILL: "+tableName+":"+id+" -> "+tr.table.name+":"+tr.id );
 				// Call the referenced tableRow (fast-tracking any false return);
-				if (! tr.traverseRead( inputMap, outputMap, tablesTraversed, queryProperties ) ) return false;
+				if (! tr.traverseRead( inputMap, outputMap, tablesTraversed, q ) ) return false;
 				// are we done yet?
 				//if ( outputMap.noNulls() && inputMap.allNulls() ) return true;
 			}

@@ -72,7 +72,8 @@ class ClientHandler extends Thread {
 			Request 		r = new Request( in );
 			
 			// Query object
-			Query 			q = new Query( database );
+			//Query 			q = new Query( database );
+			Query			q = database.query();
 			
 			// Send the Request data to the Query
 			q.parse( r.data() );

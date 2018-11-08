@@ -27,22 +27,19 @@ public class Query {
 	// MIME format
 	String mime = "text/html";
 	
-	// DEFAULT SETTINGS
 	// output map (just a reference to either the rowMap or colMap)
 	StringMap3D<String> outputMap = rowMap;
-	// flags
-	boolean writeMode 	= false;
-	boolean hasExecuted	= false;
-	// properties
-	StringMap1D<String> queryProperties = new StringMap1D<>();
+
+	// Query properties
+	boolean 	write 		= false;
+	boolean 	executed	= false;
+	String 		logic 		= "and";
 	
 	
 	// Constructor
 	public Query (Database d) {
 		// set Database object
 		db = d;
-		// default properties
-		queryProperties.write( "logic", "and" ); // and | or | xor
 	}
 	
 	// Add an output
@@ -62,24 +59,9 @@ public class Query {
 	public Query execute() {
 		System.out.println( "\n\nQuery: input: "+inputTemplate );
 		System.out.println( "\nQuery: output: "+outputTemplate+"\n\n" );
-		// write (only once per Query)
-		if (!hasExecuted && writeMode) {
-			//
-			// ************* write code ****************
-			//
-		}
 		// read
-		for (String table : inputTemplate.keys()) {
-			for (String column : inputTemplate.keys(table)) {
-				String data = inputTemplate.read(table, column);
-				for (TableRow tr : db.table(table).search(column, data, writeMode)) {
-					// in write mode, may return a table row that's not there yet.  when the "virtual" row is complete, then will need to be appended
-					System.out.println( "Query: row: "+tr );
-					tr.read( inputTemplate, outputTemplate, rowMap, queryProperties.cloned() );
-				}
-			}
-		}
-		hasExecuted = true;
+		db.execute( this );
+		executed = true;
 		return this;
 	}
 	
@@ -98,7 +80,7 @@ public class Query {
 	public Query columns() {
 		colMap = new StringMap3D<String>();
 		// make sure we've executed first
-		if(!hasExecuted) execute();
+		if(!executed) execute();
 		// map data from rowMap into colMap
 		for ( String row : rowMap.keys() ) {
 			for ( String table : rowMap.keys(row) ) {
@@ -124,14 +106,14 @@ public class Query {
 	// Create a JSON string from the outputMap
 	public String outputJSON () {
 		// make sure we've executed first
-		if(!hasExecuted) execute();
+		if(!executed) execute();
 		return outputMap.toJSON();
 	}
 
 	// Create a CSV string from the outputMap
 	public String outputCSV () {
 		// make sure we've executed first
-		if(!hasExecuted) execute();
+		if(!executed) execute();
 		String csv = "";
 		return csv;
 	}
@@ -140,7 +122,7 @@ public class Query {
 	public String outputForm () {
 		System.out.println("Query: outputing form HTML...");
 		// make sure we've executed first
-		if(!hasExecuted) execute();
+		if(!executed) execute();
 		// also map the data into columns
 		columns();
 		//System.out.println( "Query: outputMap: "+outputMap );
@@ -203,23 +185,23 @@ public class Query {
 		System.out.println("Query: command \""+c+"\"");
 		switch (c) {
 			case "and" :
-				queryProperties.write("logic","and");
+				logic = "and";
 				break;
 			case "or" :
-				queryProperties.write("logic","or");
+				logic = "or";
 				break;
 			case "xor" :
-				queryProperties.write("logic","xor");
+				logic = "xor";
 				break;
 			case "write" :
 				// if we're switching to write and have already executed, then re-execute
-				if(!writeMode && hasExecuted) {
-					writeMode = true;
+				if(!write && executed) {
+					write = true;
 					execute();
-				} else writeMode = true;
+				} else write = true;
 				break;
 			case "read" :
-				writeMode = false;
+				write = false;
 				break;
 			case "columns" :
 				// load the colMap
@@ -247,7 +229,7 @@ public class Query {
 
 	// Get the output String from this query
 	public String output () {
-		if(!hasExecuted) {
+		if(!executed) {
 			execute();
 			output = outputForm();
 		}

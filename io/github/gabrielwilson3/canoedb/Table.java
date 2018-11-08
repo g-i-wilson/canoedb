@@ -102,16 +102,11 @@ class Table {
 	}
 	
 	// get a map of TableRow objects based on column -> data_fragment
-	Collection<TableRow> search (String column, String dataFragment, boolean writeMode) {
+	Collection<TableRow> search (String column, String dataFragment) {
 		System.out.println( "Table: index input: "+column+","+dataFragment );
 		Collection<TableRow> results = tableIndex.search( column, dataFragment );
 		if (results!=null) {
 			return results;
-		} else if (writeMode) {
-			TableRow tr = row();
-			tr.update( column, dataFragment );
-			tableIndex.write(tr);
-			return tableIndex.search( column, dataFragment ); // must return non-null now...
 		} else {
 			return null_collection;
 		}
@@ -180,12 +175,15 @@ class Table {
 				return false;
 			}
 		}
-		// make sure the TableRow has been logged
-		logTableRow( tr );
 		// append the TableRow to the Table file
 		String str = "\n"+tr.data.join(",");
 		try {
+			// attempt to append to the file
 			Files.write(tableFile.toPath(), str.getBytes(), StandardOpenOption.APPEND);
+			// make sure the TableRow has been logged
+			logTableRow( tr );
+			// record in the index
+			tableIndex.write( tr );
 			System.out.println( "Table "+name+": appended row "+tr.id );
 		} catch (Exception e) {
 			System.out.println("Table: ERROR appending to file "+tableFile);
