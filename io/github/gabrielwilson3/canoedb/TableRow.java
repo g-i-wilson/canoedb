@@ -80,18 +80,9 @@ class TableRow {
 			// loop through each path downhill from this peak
 			for (TableRow tr : to) {
 				System.out.println( "TableRow: * PEAK: "+table.name+":"+id );
-				// AND logic can fail at this point (OR logic always passes)
 				if (traverseRead( inputMap, outputMap, tablesTraversed, queryProperties )) {
-					// XOR logic can fail at this point (needs at least one "xor_fail" or it fails)
-					if (queryProperties.read("logic").equals("xor")) {
-						if (queryProperties.exists("xor_fail")) {
-							// add to rowMap if XOR passes
-							rowMap.write( outputMap.map.toString(), outputMap.map );
-						}
-					} else {
-						// add to rowMap if AND/OR passes
+						// add to rowMap
 						rowMap.write( outputMap.map.toString(), outputMap.map );
-					}
 				}
 			}
 		}
@@ -125,13 +116,14 @@ class TableRow {
 						System.out.println( "TableRow: filter FAILED (AND): "+filter );
 						return false;
 					}
-				// XOR logic (must fail at least once)
+				// XOR logic (must fail all filters)
 				} else if (queryProperties.read("logic").equals("xor")) {
 					if ( table.search( column, filter, false ).contains(this) ) {
-						System.out.println( "TableRow: filter PASSED (XOR): "+filter );
+						System.out.println( "TableRow: filter PASSED (bad) (XOR): "+filter );
 						inputMap.write(tableName, column, null);
+						return false;
 					} else {
-						System.out.println( "TableRow: filter FAILED (XOR): "+filter );
+						System.out.println( "TableRow: filter FAILED (good) (XOR): "+filter );
 						queryProperties.write("xor_fail",null);
 					}
 				}
