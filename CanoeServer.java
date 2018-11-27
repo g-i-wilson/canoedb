@@ -80,7 +80,7 @@ class ClientHandler extends Thread {
 			
 			// Send each REST command from the Request to the Query
 			for ( String keyword : r.path() ) q.command( keyword );
-
+			
 			// Send the HTTP text string back to the client
 			out.print(
 				"HTTP/1.0 200 OK\r\n"+

@@ -35,11 +35,18 @@ public class Query {
 	boolean 	executed	= false;
 	String 		logic 		= "and";
 	
+	// Query timing
+	long		intervalTime;
+	long		startTime;
+	
 	
 	// Constructor
 	public Query (Database d) {
 		// set Database object
 		db = d;
+		// start time
+		startTime = System.nanoTime();
+		intervalTime = startTime;
 	}
 	
 	// Add an output
@@ -59,8 +66,9 @@ public class Query {
 	public Query execute() {
 		System.out.println( "\n\nQuery: input: "+inputTemplate );
 		System.out.println( "\nQuery: output: "+outputTemplate+"\n\n" );
-		// read
+		time("Executing query...");
 		db.execute( this );
+		time("Finished executing query");
 		executed = true;
 		return this;
 	}
@@ -120,12 +128,11 @@ public class Query {
 
 	// Generate interactive form HTML from the outputMap
 	public String outputForm () {
-		System.out.println("Query: outputing form HTML...");
+		System.out.println("Query: generating form HTML...");
 		// make sure we've executed first
 		if(!executed) execute();
 		// also map the data into columns
 		columns();
-		//System.out.println( "Query: outputMap: "+outputMap );
 		// start HTML and start the form table
 		String html = 
 			"<html>\n<head>\n<title>CanoeDB</title>\n<style>\n"+
@@ -138,13 +145,14 @@ public class Query {
 			"</style></head>\n<body>\n<div>\n<form id=\"main_form\">\n<table>\n<tr>\n";
 		// loop through all the tables and columns
 		for (String table : db.tables()) {
-			System.out.println("Query: table columns: "+table+" "+db.table(table).columns());
 			for (String column : db.table(table).columns()) {
 				html +=
 					"<td>"+table+"<br>"+column+"<br>"+
 					"<input name=\""+table+"."+column+"\" list=\""+table+"."+column+"_list\" "+
 					"value=\""+(inputTemplate.read(table, column)!=null ? inputTemplate.read(table, column) : "")+"\" "+
 					"onchange=\"document.getElementById('main_form').submit()\" "+
+					"onblur=\"document.getElementById('main_form').submit()\" "+
+					"onfocus=\"this.value=''\" "+
 					"size=5>\n"+
 					"</td>\n<datalist id=\""+table+"."+column+"_list\">\n";
 				for (String data : colMap.keys(table, column)) {
@@ -255,11 +263,9 @@ public class Query {
 				if (data.equals("")) {
 					// empty data string is a place-holder for an output
 					this.output(table, column);
-					System.out.println("Query output: table="+table+", column="+column);
 				} else {
 					// data that is not empty is considered an input
 					this.input(table, column, data);
-					System.out.println("Query input: table="+table+", column="+column+", data="+data);
 				}
 			} catch(Exception e) {
 				System.out.println("Query: didn't understand tuple: "+tuples[i]);
@@ -269,6 +275,16 @@ public class Query {
 		return this;
 	}	
 
-	
+	// time elapsed
+	void time () {
+		time("");
+	}
+	void time ( String s ) {
+		long currentTime = System.nanoTime();
+		long usCurrent = (currentTime - startTime)/1000;
+		long usInterval = (currentTime - intervalTime)/1000;
+		intervalTime = currentTime;
+		System.out.print(" ["+usInterval+", "+usCurrent+"] "+s+"\n");
+	}
 	
 }

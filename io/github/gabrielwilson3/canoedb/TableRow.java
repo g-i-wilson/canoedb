@@ -26,16 +26,26 @@ class TableRow {
 		//return "";
 	}
 	
-	// link to another TableRow
-	TableRow to (TableRow row) {
-		to.add( row );
-		return this;
+	// "hash" string unique to this TableRow (how this is implemented may change)
+	String hash () {
+		return data.hash();
 	}
-	// link to another TableRow
-	TableRow from (TableRow row) {
-		from.add( row );
-		return this;
+	
+	// link TO
+	boolean linkTo ( TableRow tr ) {
+		if (!to.contains(tr)) {
+			to.add(tr);
+			return true;
+		} else return false;
 	}
+	// link FROM
+	boolean linkFrom ( TableRow tr ) {
+		if (!from.contains(tr)) {
+			from.add( tr );
+			return true;
+		} else return false;
+	}
+	
 	// get data
 	String data ( String column ) {
 		if (data.defined(column))
@@ -65,20 +75,17 @@ class TableRow {
 			// start traversing uphill toward an unknown number of peaks
 			for (TableRow tr : from) {
 				System.out.println( "TableRow: / UPHILL: "+table.name+":"+id+" -> "+tr.table.name+":"+tr.id );
+				q.time();
 				tr.read( q );
 			}
 		} else {
 			// start traversing downhill from this peak
+			System.out.println( "TableRow: * PEAK: "+table.name+":"+id );
 			StringMap2D<String> inputMap = q.inputTemplate.cloned();
 			StringMap2D<String> outputMap = q.outputTemplate.cloned();
 			List<Table> tablesTraversed = new ArrayList<>();
-			// loop through each path downhill from this peak
-			for (TableRow tr : to) {
-				System.out.println( "TableRow: * PEAK: "+table.name+":"+id );
-				if (traverseRead( inputMap, outputMap, tablesTraversed, q )) {
-					q.rowMap.write( outputMap.map.toString(), outputMap.map );
-				}
-			}
+			if (traverseRead( inputMap, outputMap, tablesTraversed, q ))
+				q.rowMap.write( outputMap.hash(), outputMap.map );
 		}
 	}
 	
@@ -101,6 +108,7 @@ class TableRow {
 			//if ( filter!=null && data.defined(column) ) { // filter is null if it's already been used
 			if ( data.defined(column) ) { // filter is null if it's already been used
 				System.out.println( "TableRow: filter defined: "+tableName+"."+column );
+				q.time();
 				// AND logic (must pass all filters)
 				if (q.logic.equals("and")) {
 					if ( table.search( column, filter ).contains(this) ) {
@@ -121,6 +129,7 @@ class TableRow {
 					}
 				}
 				// OR logic (all filters ignored)
+				q.time();
 			}
 			
 			// are we done yet?

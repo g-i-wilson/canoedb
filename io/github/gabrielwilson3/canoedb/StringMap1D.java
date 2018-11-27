@@ -116,4 +116,8 @@ public class StringMap1D<T> {
 		return output+"\n}";
 	}
 	
+	public String hash () { // how this is implemented may change
+		return map.toString();
+	}
+		
 }

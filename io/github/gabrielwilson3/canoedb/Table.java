@@ -10,11 +10,11 @@ class Table {
 	
 	// Table properties
 	String 					name;
-	String[] 				columns;
-	StringMap1D<String>		columnMap;
-	StringMap1D<String> 	referenceMap;
-	StringMap1D<String> 	onReadMap;
-	StringMap1D<String> 	onWriteMap;
+	String[] 				columns = new String[]{};
+	StringMap1D<String>		columnMap = new StringMap1D<>();
+	StringMap1D<String> 	referenceMap = new StringMap1D<>();
+	StringMap1D<String> 	onReadMap = new StringMap1D<>();
+	StringMap1D<String> 	onWriteMap = new StringMap1D<>();
 	
 	// Table rows
 	StringMap1D<TableRow> 	rowIdMap = new StringMap1D<>();
@@ -32,6 +32,10 @@ class Table {
 	
 	// file exists
 	boolean					fileExists = false;
+	
+	// Links between tables
+	StringMap1D<Table>		toMap = new StringMap1D<>(); // tableName -> table immediately downhill from this table
+	List<Table>				fromList = new ArrayList<>(); // table(s) immediately uphill from this table
 	
 	// null set
 	Set<String>				null_set = new LinkedHashSet<>();
@@ -56,7 +60,7 @@ class Table {
 			fileName = fileName.substring(0, pos);
 		}
 		name = fileName;
-		System.out.println("Table: initialized "+name);
+		System.out.println("\nTable: initialized "+name);
 	}
 	
 	// Load table from a physical file
@@ -159,7 +163,6 @@ class Table {
 			onWriteMap = columnMap;
 			// create a file header string
 			String str =
-				","+name+"\n"+
 				","+String.join(",", columnMap.keys())+"\n"+
 				",\n"+
 				",\n"+
@@ -176,7 +179,7 @@ class Table {
 			}
 		}
 		// append the TableRow to the Table file
-		String str = "\n"+tr.data.join(",");
+		String str = "\n"+tr.id+","+tr.data.join(",");
 		try {
 			// attempt to append to the file
 			Files.write(tableFile.toPath(), str.getBytes(), StandardOpenOption.APPEND);
@@ -195,9 +198,100 @@ class Table {
 	}
 		
 	// columns in Table
-	public String[] columns () {
-		return columns;
+	public Set<String> columns () {
+		return columnMap.keys();
 	}
+	
+	// link TO Table
+	void linkTo ( String column, Table t ) {
+		toMap.write(column, t);
+	}
+	// link FROM Table
+	boolean linkFrom ( Table t ) {
+		if (!fromList.contains(t)) {
+			fromList.add( t );
+			return true;
+		} else return false;
+	}
+
+	// WRITE UPHILL traverse (recursive)
+	void write ( Query q ) {
+		if (fromList.size() > 0) {
+			// start traversing uphill toward an unknown number of peaks
+			for (Table t : fromList) {
+				System.out.println( "Table: / UPHILL: "+name+" -> "+t.name );
+				t.write( q );
+			}
+		} else {
+			// start traversing downhill from this peak
+			List<Table> tablesTraversed = new ArrayList<>();
+			// create the peak table row and kick-off the downhill traversal
+			System.out.println( "Table: * PEAK: "+name );
+			traverseWrite( tablesTraversed, q );
+		}
+	}
+	
+	// READ DOWNHILL traverse (recursive)
+	private TableRow traverseWrite (
+		List<Table> tablesTraversed,
+		Query q
+	) {
+		// if this Table file doesn't exist yet, then use the inputTemplate map to configure the columns
+		if (!fileExists) columnMap = q.inputTemplate.cloned(name);
+		
+		// create a blank TableRow object
+		TableRow tr = row();
+		
+		// loop through the colunns and fill in with data or reference strings
+		for ( String column : tr.data.keys() ) {
+			System.out.println( "Table "+name+":"+tr.id+": column "+column );
+			if (q.inputTemplate.defined(name, column)) {
+				tr.update( column, q.inputTemplate.read(name, column) );
+				System.out.println("Table "+name+": updated "+column+" of "+tr+" with "+q.inputTemplate.read(name, column));
+			} else if (toMap.defined(column)) {
+				Table t = toMap.read(column);
+				System.out.println( "Table: \\ DOWNHILL: "+name+" -> "+t.name );
+				TableRow other_tr = t.traverseWrite(tablesTraversed, q);
+				if (other_tr!=null) {
+					tr.update( column, other_tr.id );
+					tr.linkTo( other_tr );
+					System.out.println("Table "+name+": added TableRow reference in "+tr+" under "+column+" to "+other_tr);
+					// just link to; doesn't affect the other_tr TableRow yet...
+				}
+			}
+		}
+		
+		// check to see if any data (or table references) have actually been added, and return null otherwise
+		if (tr.data.allNulls()) {
+			System.out.println("Table "+name+": new TableRow has allNulls(), so returning null");
+			return null;
+		}
+		
+		// verify that another similar TableRow doesn't already exist, and if so, use the old
+		String hash = tr.hash();
+		if (rowDataMap.defined(hash)) {
+			TableRow tr_old = rowDataMap.read(hash);
+			System.out.println("Table "+name+": similar TableRow already exists; using row "+tr_old);
+			// copy the links from the new TableRow over to the old TableRow
+			for ( TableRow linked_tr : tr.to ) {
+				tr_old.linkTo( linked_tr );
+				linked_tr.linkFrom( tr_old );
+			}
+			// replace the new TableRow reference with a reference to the old TableRow
+			tr = tr_old;
+		} else {
+			for ( TableRow linked_tr : tr.to ) {
+				tr.linkTo( linked_tr );
+				linked_tr.linkFrom( tr );
+			}
+			// add the new TableRow to the Table file
+			append( tr );
+		}
+		
+		// return the new (or old) TableRow
+		return tr;
+	}
+
 
 	// referenced Table
 	String reference (String column) {
@@ -223,7 +317,7 @@ class Table {
 	// log a TableRow in the ID & data maps, and also the index
 	private void logTableRow ( TableRow tr ) {
 		rowIdMap.write( tr.id, tr );
-		rowDataMap.write( tr.data.toString(), tr );
+		rowDataMap.write( tr.hash(), tr );
 		// update the TableIndex
 		tableIndex.write( tr );
 	}
@@ -269,7 +363,7 @@ class Table {
 		return aMap;
 	}
 	
-	// map keys[] -> values[]
+	// Create a blank StringMap1D
 	private StringMap1D<String> blankMap (String[] keys) {
 		StringMap1D<String> aMap = new StringMap1D<>();
 		for (int i = 0; i < keys.length; i++) {
@@ -312,21 +406,19 @@ class Table {
 		//Getting the runtime reference from system
 		Runtime runtime = Runtime.getRuntime();
 		
-		System.out.println("##### Heap utilization statistics [MB] #####");
+		System.out.println("Table: heap utilization after loading "+name);
 		
 		//Print used memory
-		System.out.println("Used Memory:" 
-			+ (runtime.totalMemory() - runtime.freeMemory()) / mb);
+		System.out.println("Table: memory used: "+( (runtime.totalMemory() - runtime.freeMemory()) / mb )+"MB");
 
 		//Print free memory
-		System.out.println("Free Memory:" 
-			+ runtime.freeMemory() / mb);
+		System.out.println("Table: memory free: "+( runtime.freeMemory() / mb )+"MB");
 		
 		//Print total available memory
-		System.out.println("Total Memory:" + runtime.totalMemory() / mb);
+		System.out.println("Table: memory total: "+( runtime.totalMemory() / mb )+"MB");
 
 		//Print Maximum available memory
-		System.out.println("Max Memory:" + runtime.maxMemory() / mb);
+		System.out.println("Table: memory max: "+( runtime.maxMemory() / mb )+"MB");
 
 	}
 }

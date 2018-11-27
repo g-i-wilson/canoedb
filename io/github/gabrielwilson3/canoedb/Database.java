@@ -32,8 +32,7 @@ public class Database {
 			Table t = new Table( f );
 			if (t.read()) {
 				System.out.println("Database: loaded table "+t.name);
-				tableMap.write( t.name, t ); // Tables to keep in this PersistentStructure
-				System.out.println("Database: data in "+t.name+": "+t.tableIndex.index.toString());
+				tableMap.write( t.name, t );
 			} else System.out.println("Database: ERROR couldn't load table "+t.name);
 		} else System.out.println("Database: ERROR can't find file "+f);
 		return this;
@@ -61,30 +60,45 @@ public class Database {
 		return this;
 	}
 	
-	// link all the TableRow objects together by direct links
+	// link all the Table and TableRow objects together by direct links
 	public Database link () {
-		for (String table : tables()) {
-			for (String rowId : rows(table)) {
-				TableRow tr = row(table, rowId);
-				StringMap1D<String> refMap = tr.table.referenceMap;
+		System.out.println("Database: "+tableMap);
+		for (String tableName : tables()) {
+			StringMap1D<String> refMap = table(tableName).referenceMap;
+			Table t = table(tableName);
+			// LINK Tables
+			for (String refCol : refMap.keys()) {
+				if (refMap.defined(refCol) && !refMap.read(refCol).equals("")) {
+					String refTable = refMap.read(refCol);
+					Table linked_t = table(refTable);
+					// link to Table
+					t.linkTo( refCol, linked_t );
+					// link from Table
+					linked_t.linkFrom( t );
+				}
+			}
+			System.out.println("Database: Table linking complete.");
+			// LINK TableRows
+			for (String rowId : rows(tableName)) {
+				TableRow tr = row(tableName, rowId);
+				//StringMap1D<String> refMap = tr.table.referenceMap;
 				for (String refCol : refMap.keys()) {
 					// if there's a referenced table in the column
 					if (refMap.defined(refCol) && !refMap.read(refCol).equals("")) {
 						String refTable = refMap.read(refCol);
 						String refRow = tr.data(refCol);
-						System.out.println( "Database: reference found "+refTable+", "+refRow );
 						if ( !refRow.equals("") ) {
 							TableRow linked_tr = row(refTable, refRow);
-							// link to
-							if (!tr.to.contains(linked_tr)) tr.to( linked_tr );
-							// link from
-							if (!linked_tr.from.contains(tr)) linked_tr.from( tr );
+							// link to TableRow
+							tr.linkTo( linked_tr );
+							// link from TableRow
+							linked_tr.linkFrom( tr );
 						}
 					}
 				}
 			}
 		}
-		System.out.println("Database: table row-linking complete.");
+		System.out.println("Database: TableRow linking complete.");
 		return this;
 	}
 	
@@ -103,7 +117,7 @@ public class Database {
 	
 	// get all Tables
 	public Set<String> tables () {
-		return tableMap.keys();
+		return tableMap.cloned().keys();
 	}
 	
 	// get a TableRow object (auto-vivifies)
@@ -118,21 +132,20 @@ public class Database {
 	
 	// run a read or write-read query using a Query object
 	void execute ( Query q ) {
-		for (String t : q.inputTemplate.keys()) {
-			for (String c : q.inputTemplate.keys( t )) {
-				// get the first data fragment from inputTemplate
-				String data = q.inputTemplate.read( t, c );
-				Collection<TableRow> results = table( t ).search( c, data );
-				// if no search results from its table, then if write-mode, create a new TableRow
-				if (q.write && results.size()==0) {
-					TableRow tr = table( t ).row();
-					for (String col : q.inputTemplate.keys( t ))
-						tr.update( col, q.inputTemplate.read( t, c ) );
-					// ************ create new linked TableRows here *************
-				}
-				// loop through the TableRows in the search results and populate the Query object
-				for (TableRow tr : results) {
-					System.out.println( "Database: querying row: "+tr );
+		for (String tableName : q.inputTemplate.keys()) {
+			// get a reference to the Table
+			Table t = table( tableName );
+			// WRITE (writes the string as-is)
+			if (q.write) {
+				System.out.println( "Database: WRITE traverse starting at Table "+tableName );
+				q.time("Starting write...");
+				t.write( q );
+			}
+			// READ (searches for the string as though it's a begins-with fragment)
+			for (String column : q.inputTemplate.keys( tableName )) {
+				for ( TableRow tr : t.search( column, q.inputTemplate.read( tableName, column ) ) ) {
+					System.out.println( "Database: READ traverse starting at TableRow "+tr );
+					q.time("Starting read...");
 					tr.read( q );
 				}
 			}

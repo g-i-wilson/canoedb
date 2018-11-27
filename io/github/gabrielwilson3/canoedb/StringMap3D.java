@@ -109,6 +109,35 @@ public class StringMap3D<T> {
 		}
 		return cloned;
 	}
+	public StringMap2D<T> cloned (String a) {
+		StringMap2D<T> cloned = new StringMap2D<>();
+		for ( String b : this.keys(a) ) {
+			cloned.vivify(a,b);
+			for ( String c : this.keys(a,b) ) {
+				cloned.write( b, c, this.read(a,b,c) );
+			}
+		}
+		return cloned;
+	}
+	public StringMap1D<T> cloned (String a, String b) {
+		StringMap1D<T> cloned = new StringMap1D<>();
+		for ( String c : this.keys(a,b) ) {
+			cloned.write( c, this.read(a,b,c) );
+		}
+		return cloned;
+	}
+	
+	public StringMap2D<T> referenced (String a) {
+		StringMap2D<T> ref = new StringMap2D<>();
+		ref.map = read(a);
+		return ref;
+	}
+	public StringMap1D<T> referenced (String a, String b) {
+		StringMap1D<T> ref = new StringMap1D<>();
+		ref.map = read(a,b);
+		return ref;
+	}
+
 	
 	public boolean allNulls () {
 		for ( String a : this.keys() ) {
@@ -162,6 +191,10 @@ public class StringMap3D<T> {
 			output += "\n\t}";
 		}
 		return output+"\n}";
+	}
+	
+	public String hash () { // how this is implemented may change
+		return map.toString();
 	}
 		
 }
