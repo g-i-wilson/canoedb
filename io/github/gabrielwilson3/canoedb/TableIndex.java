@@ -13,10 +13,10 @@ class TableIndex {
 
 
 	TableIndex write (TableRow tr) {
-		for (String column : tr.data.keys()) {
-			String columnData = tr.data(column);
+		for (String column : tr.columns()) {
+			String columnData = tr.read(column);
 			// index the entire data string
-			indexData( column, columnData, tr.data.map.toString(), tr );
+			indexData( column, columnData, tr.hash(), tr );
 			// index each "word" in the data string
 			for (String word : columnData.split("\\W+")) {
 				if (!word.equals("")) indexData( column, word, tr.data.map.toString(), tr );

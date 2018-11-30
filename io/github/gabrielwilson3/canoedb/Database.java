@@ -86,7 +86,7 @@ public class Database {
 					// if there's a referenced table in the column
 					if (refMap.defined(refCol) && !refMap.read(refCol).equals("")) {
 						String refTable = refMap.read(refCol);
-						String refRow = tr.data(refCol);
+						String refRow = tr.read(refCol);
 						if ( !refRow.equals("") ) {
 							TableRow linked_tr = row(refTable, refRow);
 							// link to TableRow

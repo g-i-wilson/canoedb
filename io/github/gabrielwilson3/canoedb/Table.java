@@ -4,17 +4,16 @@ import java.util.*;
 import java.math.BigInteger;
 import java.nio.file.*;
 import java.io.File;
+import java.lang.*;
 
 
 class Table {
 	
 	// Table properties
 	String 					name;
-	String[] 				columns = new String[]{};
 	StringMap1D<String>		columnMap = new StringMap1D<>();
 	StringMap1D<String> 	referenceMap = new StringMap1D<>();
-	StringMap1D<String> 	onReadMap = new StringMap1D<>();
-	StringMap1D<String> 	onWriteMap = new StringMap1D<>();
+	StringMap1D<Transform> 	transformMap = new StringMap1D<>();
 	
 	// Table rows
 	StringMap1D<TableRow> 	rowIdMap = new StringMap1D<>();
@@ -37,12 +36,15 @@ class Table {
 	StringMap1D<Table>		toMap = new StringMap1D<>(); // tableName -> table immediately downhill from this table
 	List<Table>				fromList = new ArrayList<>(); // table(s) immediately uphill from this table
 	
-	// null set
+	// null objects
 	Set<String>				null_set = new LinkedHashSet<>();
-	
-	// null_collection
+	Transform				null_transform = new Transform();
 	Collection<TableRow> 	null_collection = new ArrayList<>();
 	
+	// load onRead & onWrite classes
+	ClassLoader				classLoader = TableRow.class.getClassLoader();
+	
+
 
 	// set the physical file
 	Table ( String filePath ) {
@@ -67,13 +69,28 @@ class Table {
 	boolean read () {
 		// read CSV file
 		try (Scanner sc = new Scanner(tableFile, "UTF-8")) {
+			String[] columns = removeFirst( decodeLine(sc.nextLine()) );
 			// initialize the basic table info maps
-			columns			= removeFirst( decodeLine(sc.nextLine()) );
 			columnMap		= blankMap( columns );
 			referenceMap	= twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
-			onReadMap		= twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
-			onWriteMap		= twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
 			fileExists = true;
+			// Load the read/write objects
+			StringMap1D<String> transformNames = twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
+			for (String column : columnMap.keys()) {
+				if (!transformNames.read(column).equals("")) {
+					String binName = "io.github.gabrielwilson3.canoedb."+transformNames.read(column);
+					try {
+						Class aClass = classLoader.loadClass(binName);
+						Object anObject = aClass.newInstance();
+						Transform transformObject = (Transform) anObject;
+						transformMap.write( column, transformObject );
+						System.out.println("Table: loaded Transform object "+binName);
+					} catch (Exception e) {
+						System.out.println("Table: ERROR: unable to load Transform object "+binName);
+						e.printStackTrace();
+					}
+				}
+			}
 			// Loop through lines and fill fileMap with TableRow objects
 			while (sc.hasNextLine()) {
 				// read a CSV data line: id,data1,dataN
@@ -81,7 +98,7 @@ class Table {
 				String 		rowId 	= data[0];
 				String[] 	rowData = removeFirst( data );
 				// spawn a TableRow
-				TableRow 	tr 		= new TableRow( this, rowId, twoArraysMap( columns, rowData ) );
+				TableRow tr = new TableRow( this, rowId, twoArraysMap( columns, rowData ) );
 				//System.out.println("Table: read row "+tr.data.toString());
 				checkRowId( tr.id );
 				logTableRow( tr );
@@ -144,7 +161,7 @@ class Table {
 			return rowDataMap.read(data.toString());
 		} else {
 			TableRow tr = row();
-			tr.update( data );
+			tr.write( data );
 			append( tr );
 			checkRowId( tr.id );
 			logTableRow( tr );
@@ -159,12 +176,9 @@ class Table {
 			// use the data structure from this TableRow to initialize Table columns
 			columnMap = tr.data.templated( "" ); // returns new templated object initialized to "" values
 			referenceMap = columnMap; // we can just reference this same object for the rest...
-			onReadMap = columnMap;
-			onWriteMap = columnMap;
 			// create a file header string
 			String str =
 				","+String.join(",", columnMap.keys())+"\n"+
-				",\n"+
 				",\n"+
 				",";
 			try {
@@ -242,18 +256,18 @@ class Table {
 		// create a blank TableRow object
 		TableRow tr = row();
 		
-		// loop through the colunns and fill in with data or reference strings
+		// loop through the columns and fill in with data or reference strings
 		for ( String column : tr.data.keys() ) {
 			System.out.println( "Table "+name+":"+tr.id+": column "+column );
 			if (q.inputTemplate.defined(name, column)) {
-				tr.update( column, q.inputTemplate.read(name, column) );
+				tr.write( column, q.inputTemplate.read(name, column) );
 				System.out.println("Table "+name+": updated "+column+" of "+tr+" with "+q.inputTemplate.read(name, column));
 			} else if (toMap.defined(column)) {
 				Table t = toMap.read(column);
 				System.out.println( "Table: \\ DOWNHILL: "+name+" -> "+t.name );
 				TableRow other_tr = t.traverseWrite(tablesTraversed, q);
 				if (other_tr!=null) {
-					tr.update( column, other_tr.id );
+					tr.write( column, other_tr.id );
 					tr.linkTo( other_tr );
 					System.out.println("Table "+name+": added TableRow reference in "+tr+" under "+column+" to "+other_tr);
 					// just link to; doesn't affect the other_tr TableRow yet...
@@ -299,21 +313,14 @@ class Table {
 			return referenceMap.read(column);
 		else return "";
 	}
-
-	// onRead command
-	String onRead (String column) {
-		if (onReadMap!=null && onReadMap.defined(column))
-			return onReadMap.read(column);
-		else return "";
-	}
-
-	// onWrite command
-	String onWrite (String column) {
-		if (onWriteMap!=null && onWriteMap.defined(column))
-			return onWriteMap.read(column);
-		else return "";
-	}
 	
+	// tranform Class
+	Transform transform (String column) {
+		if (transformMap.defined(column)) {
+			return transformMap.read(column);
+		} else return null_transform;
+	}
+
 	// log a TableRow in the ID & data maps, and also the index
 	private void logTableRow ( TableRow tr ) {
 		rowIdMap.write( tr.id, tr );
@@ -355,9 +362,9 @@ class Table {
 		StringMap1D<String> aMap = new StringMap1D<>();
 		for (int i = 0; i < keys.length; i++) {
 			if (values!=null && values.length > i && values[i] != null) {
-				aMap.write( keys[i], values[i] );
+				aMap.write( new String(keys[i]), values[i] );
 			} else {
-				aMap.write( keys[i], "" );
+				aMap.write( new String(keys[i]), "" );
 			}
 		}
 		return aMap;

@@ -5,6 +5,7 @@ import java.util.*;
 class TableRow {
 	
 	StringMap1D<String> 	data = new StringMap1D<>(); // column -> data_string
+	StringMap1D<Transform>	transform = new StringMap1D<>();
 	List<TableRow>			to = new ArrayList<>(); // list of links to other TableRow objects
 	List<TableRow>			from = new ArrayList<>(); // list of links to other TableRow objects
 	String					id = ""; // the ID string from the Table
@@ -17,6 +18,7 @@ class TableRow {
 		table = t;
 		id = i;
 		data = d;
+		transform = table.transformMap;
 	}
 
 	// toString
@@ -46,21 +48,32 @@ class TableRow {
 		} else return false;
 	}
 	
-	// get data
-	String data ( String column ) {
-		if (data.defined(column))
+	// columns
+	Set<String> columns () {
+		return data.keys();
+	}
+	
+	// write a StringMap1D
+	TableRow write ( StringMap1D<String> map ) {
+		for (String column : map.keys()) {
+			write( column, data.write( column, map.read( column ) ) );
+		}
+		return this;
+	}
+	// write a specific data element
+	TableRow write ( String column, String dataElement ) {
+		if (transform.defined(column))
+			data.write( column, transform.read(column).onWrite(dataElement) );
+		else
+			data.write( column, dataElement );
+		return this;
+	}
+	// read a specific data element
+	String read ( String column ) {
+		if (transform.defined(column))
+			return transform.read(column).onRead( data.read(column) );
+		else
 			return data.read(column);
-		else return "";
-	}
-	// update data
-	TableRow update ( StringMap1D<String> map ) {
-		data.update( map );
-		return this;
-	}
-	// set specific data element
-	TableRow update ( String column, String dataElement ) {
-		data.write( column, dataElement );
-		return this;
 	}
 	// merge data
 	TableRow merge ( StringMap1D<String> map ) {
@@ -140,8 +153,7 @@ class TableRow {
 		for (String column : outputMap.keys(tableName)) {
 			if ( data.defined(column) ) {
 				// record the data as a key
-				outputMap.write(tableName, column, data.read(column));
-				//System.out.println( "TableRow: wrote to outputMap: "+column+", "+data.read(column) );
+				outputMap.write(tableName, column, read(column));
 			}
 			
 			// are we done yet?
@@ -156,8 +168,6 @@ class TableRow {
 				System.out.println( "TableRow: \\ DOWNHILL: "+tableName+":"+id+" -> "+tr.table.name+":"+tr.id );
 				// Call the referenced tableRow (fast-tracking any false return);
 				if (! tr.traverseRead( inputMap, outputMap, tablesTraversed, q ) ) return false;
-				// are we done yet?
-				//if ( outputMap.noNulls() && inputMap.allNulls() ) return true;
 			}
 		}
 		
