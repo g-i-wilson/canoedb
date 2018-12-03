@@ -145,20 +145,23 @@ public class Query {
 			"</style></head>\n<body>\n<div>\n<form id=\"main_form\">\n<table>\n<tr>\n";
 		// loop through all the tables and columns
 		for (String table : db.tables()) {
-			for (String column : db.table(table).columns()) {
-				html +=
-					"<td>"+table+"<br>"+column+"<br>"+
-					"<input name=\""+table+"."+column+"\" list=\""+table+"."+column+"_list\" "+
-					"value=\""+(inputTemplate.read(table, column)!=null ? inputTemplate.read(table, column) : "")+"\" "+
-					"onchange=\"document.getElementById('main_form').submit()\" "+
-					"onblur=\"document.getElementById('main_form').submit()\" "+
-					"onfocus=\"this.value=''\" "+
-					"size=5>\n"+
-					"</td>\n<datalist id=\""+table+"."+column+"_list\">\n";
-				for (String data : colMap.keys(table, column)) {
-					html += "<option value=\""+data+"\">\n";
+			Table t = db.table(table);
+			for (String column : t.columns()) {
+				if (t.reference(column).equals("")) {
+					html +=
+						"<td>"+table+"<br>"+column+"<br>"+
+						"<input name=\""+table+"."+column+"\" list=\""+table+"."+column+"_list\" "+
+						"value=\""+(inputTemplate.read(table, column)!=null ? inputTemplate.read(table, column) : "")+"\" "+
+						"onchange=\"document.getElementById('main_form').submit()\" "+
+						"onblur=\"document.getElementById('main_form').submit()\" "+
+						"onfocus=\"this.value=''\" "+
+						"size=5>\n"+
+						"</td>\n<datalist id=\""+table+"."+column+"_list\">\n";
+					for (String data : colMap.keys(table, column)) {
+						html += "<option value=\""+data+"\">\n";
+					}
+					html += "</datalist>\n";
 				}
-				html += "</datalist>\n";
 			}
 		}
 		// complete the form table and start the output table
@@ -166,8 +169,11 @@ public class Query {
 		// table headers
 		for (String row : outputMap.keys()) {
 			for (String table : outputMap.keys(row)) {
+				Table t = db.table(table);
 				for (String column : outputMap.keys(row, table)) {
-					html += "<th>"+table+"<br>"+column+"</th>\n";
+					if (t.reference(column).equals("")) {
+						html += "<th>"+table+"<br>"+column+"</th>\n";
+					}
 				}
 			}
 			break;
@@ -177,14 +183,19 @@ public class Query {
 		for (String row : outputMap.keys()) {
 			html += "<tr>\n";
 			for (String table : outputMap.keys(row)) {
+				Table t = db.table(table);
 				for (String column : outputMap.keys(row, table)) {
-					html += "<td>"+outputMap.read(row, table, column)+"</td>\n";
+					if (t.reference(column).equals("")) {
+						String dataElement = outputMap.read(row, table, column);
+						html += "<td>"+( dataElement!=null ? dataElement : "" )+"</td>\n";
+					}
 				}
 			}
 			html += "</tr>\n";
 		}
 		// complete the output table and complete HTML
 		html += "</table>\n</div>\n</body>\n</html>\n";
+		time("HTML complete");
 		return html;
 	}
 	
@@ -276,10 +287,10 @@ public class Query {
 	}	
 
 	// time elapsed
-	void time () {
+	public void time () {
 		time("");
 	}
-	void time ( String s ) {
+	public void time ( String s ) {
 		long currentTime = System.nanoTime();
 		long usCurrent = (currentTime - startTime)/1000;
 		long usInterval = (currentTime - intervalTime)/1000;

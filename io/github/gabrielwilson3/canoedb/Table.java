@@ -32,8 +32,10 @@ class Table {
 	// file exists
 	boolean					fileExists = false;
 	
-	// Links between tables
+	// downhill
 	StringMap1D<Table>		toMap = new StringMap1D<>(); // tableName -> table immediately downhill from this table
+	Set<String>				toSet = new HashSet<>(); // set of all tables reachable downhill from this table
+	// uphill
 	List<Table>				fromList = new ArrayList<>(); // table(s) immediately uphill from this table
 	
 	// null objects
@@ -227,29 +229,48 @@ class Table {
 			return true;
 		} else return false;
 	}
+	
+	// SET DOWNHILL (START): all tables reachable downhill from this table
+	void downhill () {
+		// grab this Table's toSet, and use that in the recursive continueDownhill function
+		continueDownhill( toSet );
+	}
+	// SET DOWNHILL: continuation function for downhill function
+	void continueDownhill (Set<String> someSet) {
+		someSet.add( name ); // this Table is a member of this Set...
+		for (Table t : toMap.values()) {
+			someSet.add( t.name ); // ...in addition to all the Tables in toMap
+			t.continueDownhill( someSet );
+		}
+	}
 
 	// WRITE UPHILL traverse (recursive)
 	void write ( Query q ) {
-		if (fromList.size() > 0) {
-			// start traversing uphill toward an unknown number of peaks
-			for (Table t : fromList) {
-				System.out.println( "Table: / UPHILL: "+name+" -> "+t.name );
-				t.write( q );
-			}
-		} else {
+		// if we're high enough up the mountain (toward any of the peaks) to have all tables (containsAll)
+		if (toSet.containsAll( q.inputTemplate.keys() )) {
 			// start traversing downhill from this peak
 			List<Table> tablesTraversed = new ArrayList<>();
 			// create the peak table row and kick-off the downhill traversal
 			System.out.println( "Table: * PEAK: "+name );
 			traverseWrite( tablesTraversed, q );
+		} else {
+			// continue trekking uphill
+			for (Table t : fromList) {
+				System.out.println( "Table: / UPHILL: "+name+" -> "+t.name );
+				t.write( q );
+			}
 		}
 	}
 	
-	// READ DOWNHILL traverse (recursive)
+	// WRITE DOWNHILL traverse (recursive)
 	private TableRow traverseWrite (
 		List<Table> tablesTraversed,
 		Query q
 	) {
+		// no infinite table loops allowed
+		if (tablesTraversed.contains(this)) return null;
+		tablesTraversed.add(this);
+		
 		// if this Table file doesn't exist yet, then use the inputTemplate map to configure the columns
 		if (!fileExists) columnMap = q.inputTemplate.cloned(name);
 		

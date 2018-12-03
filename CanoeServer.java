@@ -64,22 +64,26 @@ class ClientHandler extends Thread {
 	// Read the HTTP request, respond, and close the connection
 	public void run() {
 		try {
+			// Query object
+			Query			q = database.query();
+			q.time("REQUEST INITIATED");
+			
 			// Open connections to the socket
 			BufferedReader 	in 	= new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			PrintStream 	out	= new PrintStream(new BufferedOutputStream(socket.getOutputStream()));
+			q.time("Socket opened...");
 
 			// Request object
 			Request 		r = new Request( in );
-			
-			// Query object
-			//Query 			q = new Query( database );
-			Query			q = database.query();
+			q.time("Request object created...");
 			
 			// Send the Request data to the Query
 			q.parse( r.data() );
+			q.time("Request data parsed...");
 			
 			// Send each REST command from the Request to the Query
 			for ( String keyword : r.path() ) q.command( keyword );
+			q.time("Command keywords parsed...");
 			
 			// Send the HTTP text string back to the client
 			out.print(
@@ -89,6 +93,7 @@ class ClientHandler extends Thread {
 				q.output()
 			);
 			out.close();
+			q.time("REQUEST COMPLETED");
 		}
 		catch (Exception x) {
 			System.out.println("ClientHandler: thread exception caught.");

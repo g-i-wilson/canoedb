@@ -98,6 +98,10 @@ public class Database {
 				}
 			}
 		}
+		// now that we've linked all Tables and TableRows, fill the toMapAll in each table
+		for (String tableName : tables()) {
+			table(tableName).downhill();
+		}
 		System.out.println("Database: TableRow linking complete.");
 		return this;
 	}
