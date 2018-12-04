@@ -17,7 +17,8 @@ public class Database {
 	// constructor
 	public Database ( String f ) {
 		folder( f );
-		link();
+		linkTables();
+		linkTableRows();
 	}
 	
 	// import a Table from a String file path
@@ -60,11 +61,11 @@ public class Database {
 		return this;
 	}
 	
-	// link all the Table and TableRow objects together by direct links
-	public Database link () {
+	// link all the Table objects together by direct links
+	public Database linkTables () {
 		System.out.println("Database: "+tableMap);
 		for (String tableName : tables()) {
-			StringMap1D<String> refMap = table(tableName).referenceMap;
+			StringMap1D<String> refMap = table(tableName).referenceNames;
 			Table t = table(tableName);
 			// LINK Tables
 			for (String refCol : refMap.keys()) {
@@ -77,11 +78,24 @@ public class Database {
 					linked_t.linkFrom( t );
 				}
 			}
-			System.out.println("Database: Table linking complete.");
+		}
+		// now that we've linked all Tables and TableRows, fill the toMapAll in each table
+		for (String tableName : tables()) {
+			table(tableName).downhill();
+		}
+		System.out.println("Database: Table linking complete.");
+		return this;
+	}
+	
+	// link all the TableRow objects together by direct links
+	public Database linkTableRows () {
+		System.out.println("Database: "+tableMap);
+		for (String tableName : tables()) {
+			StringMap1D<String> refMap = table(tableName).referenceNames;
+			Table t = table(tableName);
 			// LINK TableRows
 			for (String rowId : rows(tableName)) {
 				TableRow tr = row(tableName, rowId);
-				//StringMap1D<String> refMap = tr.table.referenceMap;
 				for (String refCol : refMap.keys()) {
 					// if there's a referenced table in the column
 					if (refMap.defined(refCol) && !refMap.read(refCol).equals("")) {
@@ -98,14 +112,10 @@ public class Database {
 				}
 			}
 		}
-		// now that we've linked all Tables and TableRows, fill the toMapAll in each table
-		for (String tableName : tables()) {
-			table(tableName).downhill();
-		}
 		System.out.println("Database: TableRow linking complete.");
 		return this;
 	}
-	
+
 	// get a Table object (auto-vivifies)
 	public Table table ( String tableName ) {
 		if (tableMap.defined(tableName)) {
@@ -139,17 +149,22 @@ public class Database {
 		for (String tableName : q.inputTemplate.keys()) {
 			// get a reference to the Table
 			Table t = table( tableName );
+			// if this Table file doesn't exist yet, then use the inputTemplate map to configure the columns
+			if (!t.fileExists) {
+				t.initToDisk( q );
+				linkTables();
+			}
 			// WRITE (writes the string as-is)
 			if (q.write) {
-				System.out.println( "Database: WRITE traverse starting at Table "+tableName );
-				q.time("Starting write...");
+				q.log( "Database: WRITE traverse starting at Table "+tableName );
+				q.log("Starting write...");
 				t.write( q );
 			}
 			// READ (searches for the string as though it's a begins-with fragment)
 			for (String column : q.inputTemplate.keys( tableName )) {
 				for ( TableRow tr : t.search( column, q.inputTemplate.read( tableName, column ) ) ) {
-					System.out.println( "Database: READ traverse starting at TableRow "+tr );
-					q.time("Starting read...");
+					q.log( "Database: READ traverse starting at TableRow "+tr );
+					q.log("Starting read...");
 					tr.read( q );
 				}
 			}

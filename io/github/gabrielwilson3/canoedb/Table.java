@@ -11,8 +11,9 @@ class Table {
 	
 	// Table properties
 	String 					name;
-	StringMap1D<String>		columnMap = new StringMap1D<>();
-	StringMap1D<String> 	referenceMap = new StringMap1D<>();
+	StringMap1D<String>		columnNames = new StringMap1D<>();
+	StringMap1D<String> 	referenceNames = new StringMap1D<>();
+	StringMap1D<String> 	transformNames = new StringMap1D<>();
 	StringMap1D<Transform> 	transformMap = new StringMap1D<>();
 	
 	// Table rows
@@ -48,16 +49,17 @@ class Table {
 	
 
 
-	// set the physical file
+	// set the physical path to the Table
 	Table ( String filePath ) {
 		tableFile = new File( filePath );
-		init();
+		initToMemory();
 	}
 	Table ( File f ) {
 		tableFile = f;
-		init();
+		initToMemory();
 	}
-	void init () {
+	// initialize Table in memory
+	void initToMemory () {
 		String fileName = tableFile.getName();
 		int pos = fileName.lastIndexOf(".");
 		if (fileName.lastIndexOf(".") > 0) {
@@ -73,12 +75,12 @@ class Table {
 		try (Scanner sc = new Scanner(tableFile, "UTF-8")) {
 			String[] columns = removeFirst( decodeLine(sc.nextLine()) );
 			// initialize the basic table info maps
-			columnMap		= blankMap( columns );
-			referenceMap	= twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
+			columnNames		= blankMap( columns );
+			referenceNames	= twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
+			transformNames = twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
 			fileExists = true;
 			// Load the read/write objects
-			StringMap1D<String> transformNames = twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
-			for (String column : columnMap.keys()) {
+			for (String column : columnNames.keys()) {
 				if (!transformNames.read(column).equals("")) {
 					String binName = "io.github.gabrielwilson3.canoedb."+transformNames.read(column);
 					try {
@@ -126,7 +128,7 @@ class Table {
 	
 	// get a map of TableRow objects based on column -> data_fragment
 	Collection<TableRow> search (String column, String dataFragment) {
-		System.out.println( "Table: index input: "+column+","+dataFragment );
+		//System.out.println( "Table: index input: "+column+","+dataFragment );
 		Collection<TableRow> results = tableIndex.search( column, dataFragment );
 		if (results!=null) {
 			return results;
@@ -138,7 +140,7 @@ class Table {
 	// Creates a new table row (virtual; not yet appended)
 	TableRow row () {
 		// spawn a new row
-		TableRow tr = new TableRow(this, nextRowId(), columnMap.cloned());
+		TableRow tr = new TableRow(this, nextRowId(), columnNames.cloned());
 		System.out.println( "Table "+name+": added row "+tr.id+" (auto-ID)" );
 		return tr;
 	}
@@ -150,7 +152,7 @@ class Table {
 			return rowIdMap.read(id);
 		} else {
 			// spawn a new row (virtual; not yet appended)
-			TableRow tr = new TableRow(this, id, columnMap.cloned());
+			TableRow tr = new TableRow(this, id, columnNames.cloned());
 			System.out.println( "Table "+name+": added row "+tr.id );
 			logTableRow( tr );
 			return tr;
@@ -170,30 +172,43 @@ class Table {
 			return tr;
 		}
 	}
+	
+	// initialize Table to disk
+	boolean initToDisk ( Query q ) {
+		// update Table in memory based on the Query
+		columnNames = q.inputTemplate.cloned(name);
+		for (String tableName : q.inputTemplate.keys()) {
+			if (tableName.equals(name)) continue; // skip this table
+			String newColumn = tableName+"_table_reference"; // create a reference to all the others
+			columnNames.write( newColumn, "" );
+			referenceNames.write( newColumn, tableName );
+		}
+		// create a file header string
+		String str = "";
+		for (String column : columnNames.keys())
+			str += ","+column;
+		str += "/n";
+		for (String column : columnNames.keys())
+			str += ","+referenceNames.read(column);
+		str += "/n";
+		for (String column : columnNames.keys())
+			str += ","+transformNames.read(column);
+		// write the Table to disk
+		try {
+			Files.write(tableFile.toPath(), str.getBytes());
+			fileExists = true;
+			System.out.println( "Table "+name+": written to file "+tableFile );
+		} catch (Exception e) {
+			System.out.println("Table: ERROR writing to file "+tableFile);
+			System.out.println(e);
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
 			
 	// append to the end of the Table file
 	boolean append (TableRow tr) {
-		// check for Table file existance
-		if (!fileExists) {
-			// use the data structure from this TableRow to initialize Table columns
-			columnMap = tr.data.templated( "" ); // returns new templated object initialized to "" values
-			referenceMap = columnMap; // we can just reference this same object for the rest...
-			// create a file header string
-			String str =
-				","+String.join(",", columnMap.keys())+"\n"+
-				",\n"+
-				",";
-			try {
-				Files.write(tableFile.toPath(), str.getBytes());
-				fileExists = true;
-				System.out.println( "Table "+name+": written to file "+tableFile );
-			} catch (Exception e) {
-				System.out.println("Table: ERROR writing to file "+tableFile);
-				System.out.println(e);
-				e.printStackTrace();
-				return false;
-			}
-		}
 		// append the TableRow to the Table file
 		String str = "\n"+tr.id+","+tr.data.join(",");
 		try {
@@ -215,7 +230,7 @@ class Table {
 		
 	// columns in Table
 	public Set<String> columns () {
-		return columnMap.keys();
+		return columnNames.keys();
 	}
 	
 	// link TO Table
@@ -251,12 +266,12 @@ class Table {
 			// start traversing downhill from this peak
 			List<Table> tablesTraversed = new ArrayList<>();
 			// create the peak table row and kick-off the downhill traversal
-			System.out.println( "Table: * PEAK: "+name );
+			q.log( "Table: * PEAK: "+name );
 			traverseWrite( tablesTraversed, q );
 		} else {
 			// continue trekking uphill
 			for (Table t : fromList) {
-				System.out.println( "Table: / UPHILL: "+name+" -> "+t.name );
+				q.log( "Table: / UPHILL: "+name+" -> "+t.name );
 				t.write( q );
 			}
 		}
@@ -271,26 +286,23 @@ class Table {
 		if (tablesTraversed.contains(this)) return null;
 		tablesTraversed.add(this);
 		
-		// if this Table file doesn't exist yet, then use the inputTemplate map to configure the columns
-		if (!fileExists) columnMap = q.inputTemplate.cloned(name);
-		
 		// create a blank TableRow object
 		TableRow tr = row();
 		
 		// loop through the columns and fill in with data or reference strings
 		for ( String column : tr.data.keys() ) {
-			System.out.println( "Table "+name+":"+tr.id+": column "+column );
+			q.log( "Table "+name+":"+tr.id+": column "+column );
 			if (q.inputTemplate.defined(name, column)) {
 				tr.write( column, q.inputTemplate.read(name, column) );
-				System.out.println("Table "+name+": updated "+column+" of "+tr+" with "+q.inputTemplate.read(name, column));
+				q.log("Table "+name+": updated "+column+" of "+tr+" with "+q.inputTemplate.read(name, column));
 			} else if (toMap.defined(column)) {
 				Table t = toMap.read(column);
-				System.out.println( "Table: \\ DOWNHILL: "+name+" -> "+t.name );
+				q.log( "Table: \\ DOWNHILL: "+name+" -> "+t.name );
 				TableRow other_tr = t.traverseWrite(tablesTraversed, q);
 				if (other_tr!=null) {
 					tr.write( column, other_tr.id );
 					tr.linkTo( other_tr );
-					System.out.println("Table "+name+": added TableRow reference in "+tr+" under "+column+" to "+other_tr);
+					q.log("Table "+name+": added TableRow reference in "+tr+" under "+column+" to "+other_tr);
 					// just link to; doesn't affect the other_tr TableRow yet...
 				}
 			}
@@ -298,7 +310,7 @@ class Table {
 		
 		// check to see if any data (or table references) have actually been added, and return null otherwise
 		if (tr.data.allNulls()) {
-			System.out.println("Table "+name+": new TableRow has allNulls(), so returning null");
+			q.log("Table "+name+": new TableRow has allNulls(), so returning null");
 			return null;
 		}
 		
@@ -306,7 +318,7 @@ class Table {
 		String hash = tr.hash();
 		if (rowDataMap.defined(hash)) {
 			TableRow tr_old = rowDataMap.read(hash);
-			System.out.println("Table "+name+": similar TableRow already exists; using row "+tr_old);
+			q.log("Table "+name+": similar TableRow already exists; using row "+tr_old);
 			// copy the links from the new TableRow over to the old TableRow
 			for ( TableRow linked_tr : tr.to ) {
 				tr_old.linkTo( linked_tr );
@@ -330,8 +342,8 @@ class Table {
 
 	// referenced Table
 	String reference (String column) {
-		if (referenceMap!=null && referenceMap.defined(column))
-			return referenceMap.read(column);
+		if (referenceNames!=null && referenceNames.defined(column))
+			return referenceNames.read(column);
 		else return "";
 	}
 	
@@ -374,7 +386,7 @@ class Table {
 		} catch (Exception e) {
 			// ignore exception
 		}
-		System.out.println( id+", "+highestRowId.toString() );
+		//System.out.println( id+", "+highestRowId.toString() );
 
 	}
 	

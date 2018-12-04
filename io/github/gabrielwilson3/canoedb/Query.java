@@ -18,6 +18,9 @@ public class Query {
 	// output
 	// table -> column -> data
 	StringMap2D<String> outputTemplate = new StringMap2D<>();
+	// transform
+	// table -> column -> transformObject
+	StringMap2D<String> transformMap = new StringMap2D<>();
 		
 	// database object
 	Database db;	
@@ -35,9 +38,10 @@ public class Query {
 	boolean 	executed	= false;
 	String 		logic 		= "and";
 	
-	// Query timing
+	// Query timing and messages
 	long		intervalTime;
 	long		startTime;
+	String		logText = "";
 	
 	
 	// Constructor
@@ -62,13 +66,19 @@ public class Query {
 		return this;
 	}
 	
+	// Add a tranform
+	public Query transform (String table, String column, String tran) {
+		transformMap.write( table, column, tran );
+		return this;
+	}
+	
 	// Execute read or write-read
 	public Query execute() {
 		System.out.println( "\n\nQuery: input: "+inputTemplate );
 		System.out.println( "\nQuery: output: "+outputTemplate+"\n\n" );
-		time("Executing query...");
+		log("Executing query...");
 		db.execute( this );
-		time("Finished executing query");
+		log("Finished executing query");
 		executed = true;
 		return this;
 	}
@@ -128,7 +138,7 @@ public class Query {
 
 	// Generate interactive form HTML from the outputMap
 	public String outputForm () {
-		System.out.println("Query: generating form HTML...");
+		log("Query: generating form HTML...");
 		// make sure we've executed first
 		if(!executed) execute();
 		// also map the data into columns
@@ -195,7 +205,7 @@ public class Query {
 		}
 		// complete the output table and complete HTML
 		html += "</table>\n</div>\n</body>\n</html>\n";
-		time("HTML complete");
+		log("HTML complete");
 		return html;
 	}
 	
@@ -267,16 +277,20 @@ public class Query {
 		for (int i=0;i<tuples.length;i++) {
 			String[] tuple = tuples[i].split("=");
 			try {
-				String[] table_column = URLDecoder.decode(tuple[0]).split("\\.");
+				String[] table_column_transform = URLDecoder.decode(tuple[0]).split("\\.");
 				String data = ( tuple.length>1 ? URLDecoder.decode(tuple[1]) : "" );
-				String table = table_column[0];
-				String column = table_column[1];
+				String table = table_column_transform[0];
+				String column = table_column_transform[1];
+				String tran = ( table_column_transform.length>2 ? table_column_transform[2] : null );
 				if (data.equals("")) {
 					// empty data string is a place-holder for an output
 					this.output(table, column);
 				} else {
 					// data that is not empty is considered an input
 					this.input(table, column, data);
+				}
+				if (tran!=null) {
+					this.transform(table, column, tran);
 				}
 			} catch(Exception e) {
 				System.out.println("Query: didn't understand tuple: "+tuples[i]);
@@ -286,16 +300,19 @@ public class Query {
 		return this;
 	}	
 
-	// time elapsed
-	public void time () {
-		time("");
+	// log message and time elapsed
+	public void log () {
+		log("");
 	}
-	public void time ( String s ) {
+	public void log ( String s ) {
 		long currentTime = System.nanoTime();
 		long usCurrent = (currentTime - startTime)/1000;
 		long usInterval = (currentTime - intervalTime)/1000;
 		intervalTime = currentTime;
-		System.out.print(" ["+usInterval+", "+usCurrent+"] "+s+"\n");
+		logText += "["+usInterval+", "+usCurrent+"] "+s+"\n";
+	}
+	public String logString () {
+		return logText;
 	}
 	
 }

@@ -33,7 +33,7 @@ class TableIndex {
 			return index.read(col, dataFragment).values();
 		} else {
 			// otherwise just return null
-			System.out.println( "TableIndex: no TableRow objects found for: "+col+", "+dataFragment );
+			//System.out.println( "TableIndex: no TableRow objects found for: "+col+", "+dataFragment );
 			return null;
 		}
 	}

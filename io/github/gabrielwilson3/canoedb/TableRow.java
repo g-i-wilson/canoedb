@@ -87,13 +87,12 @@ class TableRow {
 		if (from.size() > 0) {
 			// start traversing uphill toward an unknown number of peaks
 			for (TableRow tr : from) {
-				System.out.println( "TableRow: / UPHILL: "+table.name+":"+id+" -> "+tr.table.name+":"+tr.id );
-				q.time();
+				q.log( "TableRow: / UPHILL: "+table.name+":"+id+" -> "+tr.table.name+":"+tr.id );
 				tr.read( q );
 			}
 		} else {
 			// start traversing downhill from this peak
-			System.out.println( "TableRow: * PEAK: "+table.name+":"+id );
+			q.log( "TableRow: * PEAK: "+table.name+":"+id );
 			StringMap2D<String> inputMap = q.inputTemplate.cloned();
 			StringMap2D<String> outputMap = q.outputTemplate.cloned();
 			List<Table> tablesTraversed = new ArrayList<>();
@@ -120,29 +119,27 @@ class TableRow {
 			String filter = inputMap.read(tableName, column);
 			//if ( filter!=null && data.defined(column) ) { // filter is null if it's already been used
 			if ( data.defined(column) ) { // filter is null if it's already been used
-				System.out.println( "TableRow: filter defined: "+tableName+"."+column );
-				q.time();
+				q.log( "TableRow: filter defined: "+tableName+"."+column );
 				// AND logic (must pass all filters)
 				if (q.logic.equals("and")) {
 					if ( table.search( column, filter ).contains(this) ) {
-						System.out.println( "TableRow: filter PASSED (AND): "+filter );
+						q.log( "TableRow: filter PASSED (AND): "+filter );
 						inputMap.write(tableName, column, null);
 					} else {
-						System.out.println( "TableRow: filter FAILED (AND): "+filter );
+						q.log( "TableRow: filter FAILED (AND): "+filter );
 						return false;
 					}
 				// XOR logic (must fail all filters)
 				} else if (q.logic.equals("xor")) {
 					if ( table.search( column, filter ).contains(this) ) {
-						System.out.println( "TableRow: filter PASSED (bad) (XOR): "+filter );
+						q.log( "TableRow: filter PASSED (bad) (XOR): "+filter );
 						inputMap.write(tableName, column, null);
 						return false;
 					} else {
-						System.out.println( "TableRow: filter FAILED (good) (XOR): "+filter );
+						q.log( "TableRow: filter FAILED (good) (XOR): "+filter );
 					}
 				}
 				// OR logic (all filters ignored)
-				q.time();
 			}
 			
 			// are we done yet?
@@ -165,7 +162,7 @@ class TableRow {
 		for (TableRow tr : to) {
 			// Make sure the row hasn't already been traversed (no endless loops allowed):
 			if (tr.table==null || !tablesTraversed.contains(tr.table)) {
-				System.out.println( "TableRow: \\ DOWNHILL: "+tableName+":"+id+" -> "+tr.table.name+":"+tr.id );
+				q.log( "TableRow: \\ DOWNHILL: "+tableName+":"+id+" -> "+tr.table.name+":"+tr.id );
 				// Call the referenced tableRow (fast-tracking any false return);
 				if (! tr.traverseRead( inputMap, outputMap, tablesTraversed, q ) ) return false;
 			}

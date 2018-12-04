@@ -16,7 +16,7 @@ public class Request {
 		
 		// can currently only read one line
 		try {
-			http_request = input.readLine();
+			http_request += input.readLine();
 			System.out.println( "\n\n=========\nRequest: read line: "+http_request );
 		} catch (Exception e) {
 			System.out.println( "\n\n=========\nRequest: error reading from socket" );
