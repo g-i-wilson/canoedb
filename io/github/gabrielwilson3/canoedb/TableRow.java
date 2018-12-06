@@ -53,14 +53,22 @@ class TableRow {
 		return data.keys();
 	}
 	
-	// write a StringMap1D
+	// WRITE a StringMap1D
 	TableRow write ( StringMap1D<String> map ) {
 		for (String column : map.keys()) {
 			write( column, data.write( column, map.read( column ) ) );
 		}
 		return this;
 	}
-	// write a specific data element
+	// WRITE a specific data element (optional Transform override)
+	TableRow write ( String column, String dataElement, Transform tran ) {
+		if (tran!=null)
+			data.write( column, tran.onWrite(dataElement) );
+		else
+			write( column, dataElement );
+		return this;
+	}
+	// WRITE a specific data element
 	TableRow write ( String column, String dataElement ) {
 		if (transform.defined(column))
 			data.write( column, transform.read(column).onWrite(dataElement) );
@@ -68,13 +76,14 @@ class TableRow {
 			data.write( column, dataElement );
 		return this;
 	}
-	// read a specific data element
+	// READ a specific data element (without a Query being involved)
 	String read ( String column ) {
 		if (transform.defined(column))
 			return transform.read(column).onRead( data.read(column) );
 		else
-			return data.read(column);
+			return data.read( column );
 	}
+	
 	// merge data
 	TableRow merge ( StringMap1D<String> map ) {
 		data.merge( map );
@@ -91,6 +100,9 @@ class TableRow {
 				tr.read( q );
 			}
 		} else {
+			// make sure this is a new "origin" to start downhill from
+			if (q.readOrigins.contains(this)) return;
+			q.readOrigins.add(this);
 			// start traversing downhill from this peak
 			q.log( "TableRow: * PEAK: "+table.name+":"+id );
 			StringMap2D<String> inputMap = q.inputTemplate.cloned();
@@ -148,11 +160,19 @@ class TableRow {
 		
 		// loop through the output blanks
 		for (String column : outputMap.keys(tableName)) {
+			// reference any data Strings found in outputMap
 			if ( data.defined(column) ) {
-				// record the data as a key
-				outputMap.write(tableName, column, read(column));
+				String dataElement;
+				if (q.transformMap.defined(tableName, column)) {
+					Transform tran = q.transformMap.read(tableName, column);
+					dataElement = tran.onRead( data.read(column) );
+				} else if (transform.defined(column)) {
+					dataElement = transform.read(column).onRead( data.read(column) );
+				} else {
+					dataElement = data.read(column);
+				}
+				outputMap.write(tableName, column, dataElement);
 			}
-			
 			// are we done yet?
 			if ( outputMap.noNulls() && inputMap.allNulls() ) return true;
 		}

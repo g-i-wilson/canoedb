@@ -20,7 +20,14 @@ public class Query {
 	StringMap2D<String> outputTemplate = new StringMap2D<>();
 	// transform
 	// table -> column -> transformObject
-	StringMap2D<String> transformMap = new StringMap2D<>();
+	StringMap2D<String> transformNames = new StringMap2D<>();
+	StringMap2D<Transform> transformMap = new StringMap2D<>();
+	
+	// peak list (read)
+	List<TableRow> readOrigins = new ArrayList<>();
+	
+	// peak (or partial-summit) list (write)
+	List<Table> writeOrigins = new ArrayList<>();
 		
 	// database object
 	Database db;	
@@ -67,8 +74,9 @@ public class Query {
 	}
 	
 	// Add a tranform
-	public Query transform (String table, String column, String tran) {
-		transformMap.write( table, column, tran );
+	public Query transform (String table, String column, String tranName) {
+		transformNames.write( table, column, tranName );
+		transformMap.write( table, column, db.transform( tranName ) );
 		return this;
 	}
 	
@@ -281,16 +289,16 @@ public class Query {
 				String data = ( tuple.length>1 ? URLDecoder.decode(tuple[1]) : "" );
 				String table = table_column_transform[0];
 				String column = table_column_transform[1];
-				String tran = ( table_column_transform.length>2 ? table_column_transform[2] : null );
+				String tranName = ( table_column_transform.length>2 ? table_column_transform[2] : null );
 				if (data.equals("")) {
 					// empty data string is a place-holder for an output
-					this.output(table, column);
+					output(table, column);
 				} else {
 					// data that is not empty is considered an input
-					this.input(table, column, data);
+					input(table, column, data);
 				}
-				if (tran!=null) {
-					this.transform(table, column, tran);
+				if (tranName!=null) {
+					transform(table, column, tranName);
 				}
 			} catch(Exception e) {
 				System.out.println("Query: didn't understand tuple: "+tuples[i]);

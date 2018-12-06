@@ -27,9 +27,6 @@ class Table {
 	// Table index
 	TableIndex 				tableIndex = new TableIndex();
 	
-	// Null Map
-	StringMap1D<TableRow> 	null_map = new StringMap1D<>();
-	
 	// file exists
 	boolean					fileExists = false;
 	
@@ -40,6 +37,7 @@ class Table {
 	List<Table>				fromList = new ArrayList<>(); // table(s) immediately uphill from this table
 	
 	// null objects
+	StringMap1D<TableRow> 	null_map = new StringMap1D<>();
 	Set<String>				null_set = new LinkedHashSet<>();
 	Transform				null_transform = new Transform();
 	Collection<TableRow> 	null_collection = new ArrayList<>();
@@ -79,7 +77,7 @@ class Table {
 			referenceNames	= twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
 			transformNames = twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
 			fileExists = true;
-			// Load the read/write objects
+			// Load the Transform objects
 			for (String column : columnNames.keys()) {
 				if (!transformNames.read(column).equals("")) {
 					String binName = "io.github.gabrielwilson3.canoedb."+transformNames.read(column);
@@ -177,6 +175,8 @@ class Table {
 	boolean initToDisk ( Query q ) {
 		// update Table in memory based on the Query
 		columnNames = q.inputTemplate.cloned(name);
+		transformNames = q.transformNames.cloned(name);
+		transformMap = q.transformMap.cloned(name);
 		for (String tableName : q.inputTemplate.keys()) {
 			if (tableName.equals(name)) continue; // skip this table
 			String newColumn = tableName+"_table_reference"; // create a reference to all the others
@@ -187,12 +187,12 @@ class Table {
 		String str = "";
 		for (String column : columnNames.keys())
 			str += ","+column;
-		str += "/n";
+		str += "\n";
 		for (String column : columnNames.keys())
-			str += ","+referenceNames.read(column);
-		str += "/n";
+			str += ","+( referenceNames.defined(column) ? referenceNames.read(column) : "" );
+		str += "\n";
 		for (String column : columnNames.keys())
-			str += ","+transformNames.read(column);
+			str += ","+( transformNames.defined(column) ? transformNames.read(column) : "" );
 		// write the Table to disk
 		try {
 			Files.write(tableFile.toPath(), str.getBytes());
@@ -265,6 +265,9 @@ class Table {
 		if (toSet.containsAll( q.inputTemplate.keys() )) {
 			// start traversing downhill from this peak
 			List<Table> tablesTraversed = new ArrayList<>();
+			// make sure this is a new "origin" to start downhill from
+			if (q.writeOrigins.contains(this)) return;
+			q.writeOrigins.add(this);
 			// create the peak table row and kick-off the downhill traversal
 			q.log( "Table: * PEAK: "+name );
 			traverseWrite( tablesTraversed, q );
@@ -293,7 +296,7 @@ class Table {
 		for ( String column : tr.data.keys() ) {
 			q.log( "Table "+name+":"+tr.id+": column "+column );
 			if (q.inputTemplate.defined(name, column)) {
-				tr.write( column, q.inputTemplate.read(name, column) );
+				tr.write( column, q.inputTemplate.read(name, column), q.transformMap.read(name, column) );
 				q.log("Table "+name+": updated "+column+" of "+tr+" with "+q.inputTemplate.read(name, column));
 			} else if (toMap.defined(column)) {
 				Table t = toMap.read(column);

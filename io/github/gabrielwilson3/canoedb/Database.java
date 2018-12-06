@@ -14,6 +14,11 @@ public class Database {
 	// map of Table objects
 	StringMap1D<Table> tableMap = new StringMap1D<>();
 	
+	// load Transform classes on demand
+	ClassLoader classLoader = Database.class.getClassLoader();
+	Transform null_transform = new Transform();
+	StringMap1D<Transform> transformMap = new StringMap1D<>();
+
 	// constructor
 	public Database ( String f ) {
 		folder( f );
@@ -174,6 +179,28 @@ public class Database {
 	// create a new Query
 	public Query query () {
 		return new Query( this );
+	}
+	
+	// dynamically load a Class
+	public Transform transform ( String tranName ) {
+		if (transformMap.defined(tranName)) {
+			return transformMap.read(tranName);
+		} else {
+			// Load a Transform object
+			String binName = "io.github.gabrielwilson3.canoedb."+tranName;
+			try {
+				Class aClass = classLoader.loadClass(binName);
+				Object anObject = aClass.newInstance();
+				Transform transformObject = (Transform) anObject;
+				transformMap.write( tranName, transformObject );
+				System.out.println("Database: loaded Transform object "+binName);
+				return transformObject;
+			} catch (Exception e) {
+				System.out.println("Database: ERROR: unable to load Transform object "+binName);
+				e.printStackTrace();
+				return null_transform;
+			}
+		}
 	}
 
 	
