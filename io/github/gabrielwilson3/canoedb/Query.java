@@ -73,11 +73,29 @@ public class Query {
 		return this;
 	}
 	
-	// Add a tranform
+	// Add a transform
 	public Query transform (String table, String column, String tranName) {
 		transformNames.write( table, column, tranName );
 		transformMap.write( table, column, db.transform( tranName ) );
 		return this;
+	}
+	
+	// Filtered set of TableRows from a Table (specifiy filter)
+	public Collection<TableRow> rows ( Table t, String column, String filter ) {
+		if (transformMap.defined( t.name, column )) {
+			return transformMap.read( t.name, column ).tableRows( t, column, filter );
+		} else {
+			return t.null_transform.tableRows( t, column, filter );
+		}
+	}
+	// Filtered set of TableRows from a Table (automatically use the filter in inputTemplate)
+	public Collection<TableRow> rows ( Table t, String column ) {
+		String filter = inputTemplate.read( t.name, column );
+		if (filter!=null) {
+			return rows( t, column, filter );
+		} else {
+			return t.null_collection;
+		}
 	}
 	
 	// Execute read or write-read

@@ -60,15 +60,15 @@ public class Database {
 					folder( f );
 				} else
 					file( f );
-		} else
+		} else {
 			System.out.println("Database: ERROR can't find directory "+d);
-		System.out.println("Database: all tables loaded:\n"+tableMap);
+		}
 		return this;
 	}
 	
 	// link all the Table objects together by direct links
 	public Database linkTables () {
-		System.out.println("Database: "+tableMap);
+		System.out.println("\nDatabase: Linking Tables...");
 		for (String tableName : tables()) {
 			StringMap1D<String> refMap = table(tableName).referenceNames;
 			Table t = table(tableName);
@@ -94,7 +94,7 @@ public class Database {
 	
 	// link all the TableRow objects together by direct links
 	public Database linkTableRows () {
-		System.out.println("Database: "+tableMap);
+		System.out.println("\nDatabase: Linking TableRows...");
 		for (String tableName : tables()) {
 			StringMap1D<String> refMap = table(tableName).referenceNames;
 			Table t = table(tableName);
@@ -167,7 +167,7 @@ public class Database {
 			}
 			// READ (searches for the string as though it's a begins-with fragment)
 			for (String column : q.inputTemplate.keys( tableName )) {
-				for ( TableRow tr : t.search( column, q.inputTemplate.read( tableName, column ) ) ) {
+				for ( TableRow tr : q.rows( t, column ) ) {
 					q.log( "Database: READ traverse starting at TableRow "+tr );
 					q.log("Starting read...");
 					tr.read( q );

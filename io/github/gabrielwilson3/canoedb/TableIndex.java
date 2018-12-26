@@ -10,6 +10,10 @@ class TableIndex {
 	// Table columns (for finding row by column data)
 	// column -> datafragment -> rowData -> TableRowObject (ignores duplicate rows)
 	StringMap3D<TableRow> index = new StringMap3D<>();
+	
+	// null Collection
+	Collection<TableRow> null_collection = new ArrayList<>();
+
 
 
 	TableIndex write (TableRow tr) {
@@ -34,7 +38,7 @@ class TableIndex {
 		} else {
 			// otherwise just return null
 			//System.out.println( "TableIndex: no TableRow objects found for: "+col+", "+dataFragment );
-			return null;
+			return null_collection;
 		}
 	}
 	

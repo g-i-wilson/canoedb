@@ -105,7 +105,6 @@ class Table {
 				checkRowId( tr.id );
 				logTableRow( tr );
 			}
-			System.out.println("Table: rows: "+rowIdMap.toString());
 			// Scanner suppresses io exceptions
 			if (sc.ioException() != null) System.out.println( "Table: file io exception: "+sc.ioException() );
 		} catch (Exception e) {
@@ -123,18 +122,7 @@ class Table {
 	Set<String> rows () {
 		return rowIdMap.keys();
 	}
-	
-	// get a map of TableRow objects based on column -> data_fragment
-	Collection<TableRow> search (String column, String dataFragment) {
-		//System.out.println( "Table: index input: "+column+","+dataFragment );
-		Collection<TableRow> results = tableIndex.search( column, dataFragment );
-		if (results!=null) {
-			return results;
-		} else {
-			return null_collection;
-		}
-	}
-	
+		
 	// Creates a new table row (virtual; not yet appended)
 	TableRow row () {
 		// spawn a new row

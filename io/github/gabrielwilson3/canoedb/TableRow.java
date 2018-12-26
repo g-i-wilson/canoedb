@@ -76,12 +76,22 @@ class TableRow {
 			data.write( column, dataElement );
 		return this;
 	}
-	// READ a specific data element (without a Query being involved)
+	// READ a specific data element (ignoring Query)
 	String read ( String column ) {
 		if (transform.defined(column))
 			return transform.read(column).onRead( data.read(column) );
 		else
 			return data.read( column );
+	}
+	// READ a specific data element (checking for override Transform in Query)
+	String read ( String column, Query q ) {
+		String tableName = table.name;
+		if (q.transformMap.defined(tableName, column)) {
+			Transform tran = q.transformMap.read(tableName, column);
+			return tran.onRead( data.read(column) );
+		} else {
+			return read(column);
+		}
 	}
 	
 	// merge data
@@ -129,12 +139,11 @@ class TableRow {
 		// loop through input filters (if they exist)
 		for (String column : inputMap.keys(tableName)) {
 			String filter = inputMap.read(tableName, column);
-			//if ( filter!=null && data.defined(column) ) { // filter is null if it's already been used
 			if ( data.defined(column) ) { // filter is null if it's already been used
 				q.log( "TableRow: filter defined: "+tableName+"."+column );
 				// AND logic (must pass all filters)
 				if (q.logic.equals("and")) {
-					if ( table.search( column, filter ).contains(this) ) {
+					if ( q.rows( table, column, filter ).contains(this) ) {
 						q.log( "TableRow: filter PASSED (AND): "+filter );
 						inputMap.write(tableName, column, null);
 					} else {
@@ -143,7 +152,7 @@ class TableRow {
 					}
 				// XOR logic (must fail all filters)
 				} else if (q.logic.equals("xor")) {
-					if ( table.search( column, filter ).contains(this) ) {
+					if ( q.rows( table, column, filter ).contains(this) ) {
 						q.log( "TableRow: filter PASSED (bad) (XOR): "+filter );
 						inputMap.write(tableName, column, null);
 						return false;
@@ -162,16 +171,7 @@ class TableRow {
 		for (String column : outputMap.keys(tableName)) {
 			// reference any data Strings found in outputMap
 			if ( data.defined(column) ) {
-				String dataElement;
-				if (q.transformMap.defined(tableName, column)) {
-					Transform tran = q.transformMap.read(tableName, column);
-					dataElement = tran.onRead( data.read(column) );
-				} else if (transform.defined(column)) {
-					dataElement = transform.read(column).onRead( data.read(column) );
-				} else {
-					dataElement = data.read(column);
-				}
-				outputMap.write(tableName, column, dataElement);
+				outputMap.write(tableName, column, read( column, q )); // check for override Transform in Query
 			}
 			// are we done yet?
 			if ( outputMap.noNulls() && inputMap.allNulls() ) return true;
