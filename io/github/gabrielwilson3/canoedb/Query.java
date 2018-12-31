@@ -32,18 +32,17 @@ public class Query {
 	// database object
 	Database db;	
 	
-	// output String
-	String output = "";
-	// MIME format
-	String mime = "text/html";
-	
 	// output map (just a reference to either the rowMap or colMap)
 	StringMap3D<String> outputMap = rowMap;
 
 	// Query properties
+	String		output 		= "";
 	boolean 	write 		= false;
 	boolean 	executed	= false;
+	boolean		columns		= false;
 	String 		logic 		= "and";
+	String		type		= "form";
+	String 		mime 		= "text/html";
 	
 	// Query timing and messages
 	long		intervalTime;
@@ -104,6 +103,7 @@ public class Query {
 		System.out.println( "\nQuery: output: "+outputTemplate+"\n\n" );
 		log("Executing query...");
 		db.execute( this );
+		if (columns) mapToColumns();
 		log("Finished executing query");
 		executed = true;
 		return this;
@@ -121,7 +121,7 @@ public class Query {
 	}
 
 	// set map to colMap, and re-map data
-	public Query columns() {
+	public Query mapToColumns() {
 		colMap = new StringMap3D<String>();
 		// make sure we've executed first
 		if(!executed) execute();
@@ -149,26 +149,33 @@ public class Query {
 	
 	// Create a JSON string from the outputMap
 	public String outputJSON () {
-		// make sure we've executed first
-		if(!executed) execute();
 		return outputMap.toJSON();
 	}
 
 	// Create a CSV string from the outputMap
 	public String outputCSV () {
-		// make sure we've executed first
-		if(!executed) execute();
 		String csv = "";
 		return csv;
+	}
+	
+	// Create a JSON string describing the Tables structure in the Database
+	public String outputStructure () {
+		StringMap3D<String> struct = new StringMap3D<>();
+		for (String table : db.tables()) {
+			Table t = db.table(table);
+			for (String column : t.columns()) {
+				struct.write( table, column, "REF", t.referenceNames.read(column) );
+				struct.write( table, column, "TRAN", t.transformNames.read(column) );
+			}
+		}
+		return struct.toJSON();
 	}
 
 	// Generate interactive form HTML from the outputMap
 	public String outputForm () {
 		log("Query: generating form HTML...");
-		// make sure we've executed first
-		if(!executed) execute();
-		// also map the data into columns
-		columns();
+		// map to columns (the "form" type is special)
+		mapToColumns();
 		// start HTML and start the form table
 		String html = 
 			"<html>\n<head>\n<title>CanoeDB</title>\n<style>\n"+
@@ -178,7 +185,7 @@ public class Query {
 			"th, td { padding:10px; text-align:left; }\n"+
 			//"table td {border:solid 1px #eee; word-wrap:break-word;}\n"+
 			//"table th {border:solid 1px #eee; word-wrap:break-word;}\n"+
-			"</style></head>\n<body>\n<div>\n<form id=\"main_form\">\n<table>\n<tr>\n";
+			"</style></head>\n<body>\n<div>\n<form id=\"main_form\" method=\"post\">\n<table>\n<tr>\n";
 		// loop through all the tables and columns
 		for (String table : db.tables()) {
 			Table t = db.table(table);
@@ -235,7 +242,7 @@ public class Query {
 		return html;
 	}
 	
-	// Set the output mode for this query
+	// Set the execution settings for this query
 	public Query command (String c) {
 		System.out.println("Query: command \""+c+"\"");
 		switch (c) {
@@ -249,34 +256,34 @@ public class Query {
 				logic = "xor";
 				break;
 			case "write" :
-				// if we're switching to write and have already executed, then re-execute
-				if(!write && executed) {
-					write = true;
-					execute();
-				} else write = true;
+				write = true;
 				break;
 			case "read" :
 				write = false;
 				break;
 			case "columns" :
-				// load the colMap
-				columns();
+				columns = true;
 				outputMap = colMap;
 				break;
 			case "rows" :
+				columns = false;
 				outputMap = rowMap;
 				break;
 			case "json" :
-				output = outputJSON();
+				type = "json";
 				mime = "application/json; charset=utf-8";
 				break;
 			case "csv" :
-				output = outputCSV();
+				type = "csv";
 				mime = "text/csv; charset=utf-8";
 				break;
 			case "form" :
-				output = outputForm();
+				type = "form";
 				mime = "text/html; charset=utf-8";
+				break;
+			case "struct" :
+				type = "struct";
+				mime = "application/json; charset=utf-8";
 				break;
 		}
 		return this;
@@ -284,11 +291,19 @@ public class Query {
 
 	// Get the output String from this query
 	public String output () {
-		if(!executed) {
-			execute();
-			output = outputForm();
+		execute();
+		switch(type) {
+			case "json" :
+				return outputJSON();
+			case "csv" :
+				return outputCSV();
+			case "form" :
+				return outputForm();
+			case "struct" :
+				return outputStructure();
+			default:
+				return outputForm();
 		}
-		return output;
 	}
 	
 	// Get the MIME format
