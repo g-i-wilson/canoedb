@@ -105,6 +105,7 @@ public class StringMap1D<T> {
 		String output = "{";
 		String a_comma = "\n";
 		for ( String a : keys() ) {
+			if (a==null) continue;
 			T data = read(a);
 			if (data!=null) {
 				output += a_comma+"\t\""+a.toString().replace("\"","\\\"")+"\" : \""+data.toString().replace("\"","\\\"")+"\"";

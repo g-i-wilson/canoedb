@@ -120,10 +120,12 @@ public class StringMap2D<T> {
 		String output = "{";
 		String a_comma = "\n";
 		for ( String a : keys() ) {
+			if (a==null) continue;
 			output += a_comma+"\t\""+a.toString().replace("\"","\\\"")+"\" : {";
 			a_comma = ",\n";
 			String b_comma = "\n";
 			for ( String b : keys(a) ) {
+				if (b==null) continue;
 				T data = read(a,b);
 				if (data!=null) {
 					output += b_comma+"\t\t\""+b.toString().replace("\"","\\\"")+"\" : \""+data.toString().replace("\"","\\\"")+"\"";
