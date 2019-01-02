@@ -107,9 +107,9 @@ public class StringMap1D<T> {
 		for ( String a : keys() ) {
 			T data = read(a);
 			if (data!=null) {
-				output += a_comma+"\t\""+a+"\" : \""+data.toString().replace("\"","\\\"")+"\"";
+				output += a_comma+"\t\""+a.toString().replace("\"","\\\"")+"\" : \""+data.toString().replace("\"","\\\"")+"\"";
 			} else {
-				output += a_comma+"\t\""+a+"\" : null";
+				output += a_comma+"\t\""+a.toString().replace("\"","\\\"")+"\" : null";
 			}
 			a_comma = ",\n";
 		}

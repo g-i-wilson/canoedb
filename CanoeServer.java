@@ -35,13 +35,13 @@ public class CanoeServer {
 	  
 	serverSocket=new ServerSocket(port);  // Start, listen on port 80
 	
-	int connectionId = 0;
+	int sessionId = 0;
 
 	while (true) {
 			try {
 				Socket socket = serverSocket.accept();  // Wait for a client to connect
-				connectionId++;
-				new ClientHandler(socket, database, connectionId);  // Handle the client in a separate thread
+				sessionId++;
+				new ClientHandler(socket, database, sessionId);  // Handle the client in a separate thread
 			}
 				catch (Exception x) {
 				System.out.println("CanoeServer: Server exception caught.");
@@ -56,43 +56,39 @@ public class CanoeServer {
 class ClientHandler extends Thread {
 	private Socket socket;  // The accepted socket from the Webserver
 	private Database database;
-	private int connectionId;
+	private int sessionId;
 
 	// Start the thread in the constructor
 	public ClientHandler(Socket s, Database d, int n) {
 		socket = s;
 		database = d;
-		connectionId = n;
+		sessionId = n;
 		start();
 	}
 
 	// Read the HTTP request, respond, and close the connection
 	public void run() {
 		try {
-			System.out.println("\n\n****\nClientHandler: connection "+connectionId+" accepted...");
+			System.out.println("\n\n====\nClientHandler: session "+sessionId+" opened...");
 			
 			// Query object
-			Query			q = database.query();
+			Query q = database.query( sessionId );
 			q.log("REQUEST INITIATED");
 			
 			// Open connections to the socket
-			//BufferedReader 	in 	= new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			//PrintStream 	out	= new PrintStream(new BufferedOutputStream(socket.getOutputStream()));
-			PrintWriter 	out	= new PrintWriter(socket.getOutputStream(), true); // autoFlush true
-			//DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-			q.log("OUTPUT STREAM OPENED");
+			PrintWriter out	= new PrintWriter(socket.getOutputStream(), true); // autoFlush true
 
 			// Request object
-			Request 		r = new Request( socket, connectionId );
-			q.log("Request object created...");
+			Request r = new Request( socket, sessionId );
+			q.log("HTTP REQUEST READ");
 			
 			// Send the Request data to the Query
 			q.parse( r.data() );
-			q.log("Request data parsed...");
+			q.log("REQUEST DATA PARSED");
 			
-			// Send each REST command from the Request to the Query
+			// Send each REST command from the Request object to the Query object
 			for ( String keyword : r.path() ) q.command( keyword );
-			q.log("Command keywords parsed...");
+			q.log("COMMAND KEYWORDS PARSED");
 			
 			// Send the HTTP text string back to the client
 			out.print(
@@ -101,13 +97,18 @@ class ClientHandler extends Thread {
 				"\r\n"+
 				q.output()
 			);
+			q.log("HTTP RESPONCE WRITTEN");
+			
+			// close the connection
 			out.close();
 			q.log("OUTPUT STREAM CLOSED");
 			socket.close();
 			q.log("SOCKET CLOSED");
+			
+			// print the Query log
 			System.out.print( q.logString() );
 			
-			System.out.println("\nClientHandler: connection "+connectionId+" complete\n****\n\n");
+			System.out.println("\nClientHandler: session "+sessionId+" closed.\n====\n\n");
 		}
 		catch (Exception x) {
 			System.out.println("ClientHandler: thread exception caught.");

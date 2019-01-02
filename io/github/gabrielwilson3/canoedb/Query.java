@@ -6,12 +6,14 @@ import java.math.BigInteger;
 
 public class Query {
 	
-	// native output format is rowMap
+	// Database.execute(this) populates rowMap
 	// rowMap: row_str -> table -> column -> data
 	StringMap3D<String> rowMap = new StringMap3D<>();
 	// colMap: table -> column -> data -> quantity
-	StringMap3D<String> colMap;
-	
+	StringMap3D<String> colMap = new StringMap3D<>();
+	// structMap: table -> column -> reference||transform -> table_name||transform_name
+	StringMap3D<String> structMap = new StringMap3D<>();
+		
 	// input
 	// table -> column -> data
 	StringMap2D<String> inputTemplate = new StringMap2D<>();
@@ -36,13 +38,12 @@ public class Query {
 	StringMap3D<String> outputMap = rowMap;
 
 	// Query properties
+	int			sessionId;
 	String		output 		= "";
 	boolean 	write 		= false;
-	boolean 	executed	= false;
-	boolean		columns		= false;
 	String 		logic 		= "and";
-	String		type		= "form";
-	String 		mime 		= "text/html";
+	String		format		= "form";
+	String 		mime 		= "text/html; charset=utf-8";
 	
 	// Query timing and messages
 	long		intervalTime;
@@ -51,9 +52,11 @@ public class Query {
 	
 	
 	// Constructor
-	public Query (Database d) {
+	public Query (Database d, int id) {
 		// set Database object
 		db = d;
+		// set sessionId
+		sessionId = id;
 		// start time
 		startTime = System.nanoTime();
 		intervalTime = startTime;
@@ -82,8 +85,10 @@ public class Query {
 	// Filtered set of TableRows from a Table (specifiy filter)
 	public Collection<TableRow> rows ( Table t, String column, String filter ) {
 		if (transformMap.defined( t.name, column )) {
+			log("Query: using CUSTOM Transform with filter '"+filter+"', to find TableRows in "+t.name);
 			return transformMap.read( t.name, column ).tableRows( t, column, filter );
 		} else {
+			log("Query: using DEFAULT Transform with filter '"+filter+"', to find TableRows in "+t.name);
 			return t.null_transform.tableRows( t, column, filter );
 		}
 	}
@@ -91,22 +96,12 @@ public class Query {
 	public Collection<TableRow> rows ( Table t, String column ) {
 		String filter = inputTemplate.read( t.name, column );
 		if (filter!=null) {
+			log("Query: using filter '"+filter+"'");
 			return rows( t, column, filter );
 		} else {
+			log("Query: null set of TableRows from table "+t.name);
 			return t.null_collection;
 		}
-	}
-	
-	// Execute read or write-read
-	public Query execute() {
-		System.out.println( "\n\nQuery: input: "+inputTemplate );
-		System.out.println( "\nQuery: output: "+outputTemplate+"\n\n" );
-		log("Executing query...");
-		db.execute( this );
-		if (columns) mapToColumns();
-		log("Finished executing query");
-		executed = true;
-		return this;
 	}
 	
 	// increment a numerical value held as a String
@@ -120,11 +115,8 @@ public class Query {
 		}
 	}
 
-	// set map to colMap, and re-map data
-	public Query mapToColumns() {
-		colMap = new StringMap3D<String>();
-		// make sure we've executed first
-		if(!executed) execute();
+	// map data from rowMap into colMap
+	void mapToColumns() {
 		// map data from rowMap into colMap
 		for ( String row : rowMap.keys() ) {
 			for ( String table : rowMap.keys(row) ) {
@@ -135,47 +127,46 @@ public class Query {
 				}
 			}
 		}
-		//System.out.println( "Query: rowMap: "+rowMap );
-		//System.out.println( "Query: colMap: "+colMap );
-		//System.out.println( "Query: outputMap: "+outputMap );
-		return this;
 	}
 	
-	// set Database
-	public Query database(Database d) {
-		db = d;
-		return this;
+	// refresh the structure of the database
+	void databaseStructure () {
+		for (String table : db.tables()) {
+			Table t = db.table(table);
+			for (String column : t.columns()) {
+				structMap.vivify( table, column ); // at least vivify the table and column.
+				// if there's a reference or transform, then add that property
+				if (!t.referenceNames.read(column).equals("")) structMap.write( table, column, "reference", t.referenceNames.read(column) );
+				if (!t.transformNames.read(column).equals("")) structMap.write( table, column, "transform", t.transformNames.read(column) );
+			}
+		}
 	}
-	
+
 	// Create a JSON string from the outputMap
-	public String outputJSON () {
-		return outputMap.toJSON();
+	String outputJSON () {
+		log("Query: generating JSON...");
+		return	"{\n"+
+				"\"structure\" : "+
+				structMap.toJSON()+
+				",\n"+
+				"\"columns\" : "+
+				colMap.toJSON()+
+				",\n"+
+				"\"rows\" : "+
+				rowMap.toJSON()+
+				"\n}";
 	}
 
 	// Create a CSV string from the outputMap
-	public String outputCSV () {
+	String outputCSV () {
+		log("Query: generating CSV...");
 		String csv = "";
 		return csv;
 	}
 	
-	// Create a JSON string describing the Tables structure in the Database
-	public String outputStructure () {
-		StringMap3D<String> struct = new StringMap3D<>();
-		for (String table : db.tables()) {
-			Table t = db.table(table);
-			for (String column : t.columns()) {
-				struct.write( table, column, "REF", t.referenceNames.read(column) );
-				struct.write( table, column, "TRAN", t.transformNames.read(column) );
-			}
-		}
-		return struct.toJSON();
-	}
-
 	// Generate interactive form HTML from the outputMap
-	public String outputForm () {
+	String outputForm () {
 		log("Query: generating form HTML...");
-		// map to columns (the "form" type is special)
-		mapToColumns();
 		// start HTML and start the form table
 		String html = 
 			"<html>\n<head>\n<title>CanoeDB</title>\n<style>\n"+
@@ -183,8 +174,6 @@ public class Query {
 			"div { width:100%; overflow-x:auto; overflow-y:hidden; }\n"+
 			"table { border-collapse:collapse; table-layout:fixed; }\n"+
 			"th, td { padding:10px; text-align:left; }\n"+
-			//"table td {border:solid 1px #eee; word-wrap:break-word;}\n"+
-			//"table th {border:solid 1px #eee; word-wrap:break-word;}\n"+
 			"</style></head>\n<body>\n<div>\n<form id=\"main_form\" method=\"post\">\n<table>\n<tr>\n";
 		// loop through all the tables and columns
 		for (String table : db.tables()) {
@@ -244,7 +233,7 @@ public class Query {
 	
 	// Set the execution settings for this query
 	public Query command (String c) {
-		System.out.println("Query: command \""+c+"\"");
+		log("Query: command \""+c+"\"");
 		switch (c) {
 			case "and" :
 				logic = "and";
@@ -261,29 +250,17 @@ public class Query {
 			case "read" :
 				write = false;
 				break;
-			case "columns" :
-				columns = true;
-				outputMap = colMap;
-				break;
-			case "rows" :
-				columns = false;
-				outputMap = rowMap;
-				break;
 			case "json" :
-				type = "json";
+				format = "json";
 				mime = "application/json; charset=utf-8";
 				break;
 			case "csv" :
-				type = "csv";
+				format = "csv";
 				mime = "text/csv; charset=utf-8";
 				break;
 			case "form" :
-				type = "form";
+				format = "form";
 				mime = "text/html; charset=utf-8";
-				break;
-			case "struct" :
-				type = "struct";
-				mime = "application/json; charset=utf-8";
 				break;
 		}
 		return this;
@@ -291,16 +268,25 @@ public class Query {
 
 	// Get the output String from this query
 	public String output () {
-		execute();
-		switch(type) {
+		// log filters (input) and columns (output)
+		log( "Query: input: "+inputTemplate );
+		log( "Query: output: "+outputTemplate );
+		// begin execute
+		log("Executing query...");
+		db.execute( this );
+		log("Finished executing query");
+		// map data from the rows structure to the columns structure
+		mapToColumns();
+		// refresh the structure of the database
+		databaseStructure();
+		// return the query results using the data format requested
+		switch(format) {
 			case "json" :
 				return outputJSON();
 			case "csv" :
 				return outputCSV();
 			case "form" :
 				return outputForm();
-			case "struct" :
-				return outputStructure();
 			default:
 				return outputForm();
 		}
@@ -314,6 +300,7 @@ public class Query {
 	// Parse the query string as CGI key=value&key=value tuples
 	public Query parse (String query) {
 		// loop through cgi data query and directly map input, output, and operation data
+		log("Query: parsing '"+query+"'");
 		String[] tuples = query.split("&");
 		for (int i=0;i<tuples.length;i++) {
 			String[] tuple = tuples[i].split("=");
@@ -334,8 +321,7 @@ public class Query {
 					transform(table, column, tranName);
 				}
 			} catch(Exception e) {
-				System.out.println("Query: didn't understand tuple: "+tuples[i]);
-				//e.printStackTrace(System.out);
+				log("Query: didn't understand tuple: "+tuples[i]);
 			}
 		}
 		return this;
@@ -350,7 +336,7 @@ public class Query {
 		long usCurrent = (currentTime - startTime)/1000;
 		long usInterval = (currentTime - intervalTime)/1000;
 		intervalTime = currentTime;
-		logText += "["+usInterval+", "+usCurrent+"] "+s+"\n";
+		logText += sessionId+"-> ["+usInterval+", "+usCurrent+"] "+s+"\n";
 	}
 	public String logString () {
 		return logText;

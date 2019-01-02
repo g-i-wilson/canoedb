@@ -151,25 +151,28 @@ public class Database {
 	
 	// run a read or write-read query using a Query object
 	void execute ( Query q ) {
+		q.log("Database: executing query...");
 		for (String tableName : q.inputTemplate.keys()) {
 			// get a reference to the Table
 			Table t = table( tableName );
 			// if this Table file doesn't exist yet, then use the inputTemplate map to configure the columns
 			if (!t.fileExists) {
+				q.log("Database: table file doesn't exist...");
 				t.initToDisk( q );
 				linkTables();
 			}
 			// WRITE (writes the string as-is)
 			if (q.write) {
+				q.log("Database: starting WRITE...");
 				q.log( "Database: WRITE traverse starting at Table "+tableName );
-				q.log("Starting write...");
 				t.write( q );
 			}
 			// READ (searches for the string as though it's a begins-with fragment)
+			q.log("Database: starting READ...");
 			for (String column : q.inputTemplate.keys( tableName )) {
+				q.log("Database: input column "+column+"...");
 				for ( TableRow tr : q.rows( t, column ) ) {
 					q.log( "Database: READ traverse starting at TableRow "+tr );
-					q.log("Starting read...");
 					tr.read( q );
 				}
 			}
@@ -177,8 +180,8 @@ public class Database {
 	}
 	
 	// create a new Query
-	public Query query () {
-		return new Query( this );
+	public Query query ( int connectionId ) {
+		return new Query( this, connectionId );
 	}
 	
 	// dynamically load a Class

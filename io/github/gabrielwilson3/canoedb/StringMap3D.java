@@ -170,19 +170,19 @@ public class StringMap3D<T> {
 		String output = "{";
 		String a_comma = "\n";
 		for ( String a : keys() ) {
-			output += a_comma+"\t\""+a+"\" : {";
+			output += a_comma+"\t\""+a.toString().replace("\"","\\\"")+"\" : {";
 			a_comma = ",\n";
 			String b_comma = "\n";
 			for ( String b : keys(a) ) {
-				output += b_comma+"\t\t\""+b+"\" : {";
+				output += b_comma+"\t\t\""+b.toString().replace("\"","\\\"")+"\" : {";
 				b_comma = ",\n";
 				String c_comma = "\n";
 				for ( String c : keys(a,b) ) {
 					T data = read(a,b,c);
 					if (data!=null) {
-						output += c_comma+"\t\t\t\""+c+"\" : \""+data.toString().replace("\"","\\\"")+"\"";
+						output += c_comma+"\t\t\t\""+c.toString().replace("\"","\\\"")+"\" : \""+data.toString().replace("\"","\\\"")+"\"";
 					} else {
-						output += c_comma+"\t\t\t\""+c+"\" : null";
+						output += c_comma+"\t\t\t\""+c.toString().replace("\"","\\\"")+"\" : null";
 					}
 					c_comma = ",\n";
 				}
