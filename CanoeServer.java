@@ -94,6 +94,7 @@ class ClientHandler extends Thread {
 			out.print(
 				"HTTP/1.0 200 OK\r\n"+
 				"Content-type: "+q.mime()+"\r\n"+
+				"Access-Control-Allow-Origin: *\r\n"+
 				"\r\n"+
 				q.output()
 			);
