@@ -1,100 +1,69 @@
 'use strict';
 
-var test_structure = {
-	structure : {
-		"bun_table" : {
-			"bun" : {
-			}
-		},
-		"instances" : {
-			"instances" : {
-			},
-			"type_of_food" : {
-				"reference" : "types"
-			}
-		},
-		"meat_table" : {
-			"meat" : {
-			},
-			"processing date" : {
-				"transform" : "TimeStamp"
-			},
-			"text-art logo" : {
-				"transform" : "StoreBase64"
-			}
-		},
-		"types" : {
-			"food_type" : {
-			},
-			"bun" : {
-				"reference" : "bun_table"
-			},
-			"meat" : {
-				"reference" : "meat_table"
-			}
-		}
-	},
-	columns : {
-		"bun_table" : {
-			"bun" : {
-				"round bun" : "2"
-			}
-		},
-		"meat_table" : {
-			"processing date" : {
-				"2018-11-30T07:30:43.775" : "1"
-			}
-		}
-	},
-	rows : {
-		"{bun_table={bun=round bun}, meat_table={processing date=null}}" : {
-			"bun_table" : {
-				"bun" : "round bun"
-			},
-			"meat_table" : {
-				"processing date" : null
-			}
-		},
-		"{bun_table={bun=round bun}, meat_table={processing date=2018-11-30T07:30:43.775}}" : {
-			"bun_table" : {
-				"bun" : "round bun"
-			},
-			"meat_table" : {
-				"processing date" : "2018-11-30T07:30:43.775"
-			}
-		}
-	}
-}
 
 const e = React.createElement;
 
-// class Table extends React.Component {
-	// constructor(props) {
-		// super(props);
-		// this.state = {...props};
-	// }
+class ColumnHeader extends React.Component {
+	constructor(props) {
+		super(props);
+		this.state = {...props};
 
-	// render() {
-		// console.log("Rendering table "+this.state.name);
+		this.inputChange = this.inputChange.bind(this);
+	}
 
-		// return e(
-			// 'div',
-			// null,
-			// e(
-				// 'h1',
-				// this.state.name
-			// ),
-			// e(
-				// 'text',
-				// { onBlur: () => {this.state.update({filter: this.value})} }
-			// ),
-			// e(
-				// 'text',
-				// { onBlur: () => {this.state.update({transform: this.value})} }
-			// )
-		// );
-	// }
-// }
+	inputChange(event) {
+		var targetName = event.target.name;
+		var targetValue = ( targetName === 'checkbox' ? event.target.checked : ( event.target.value ? event.target.value : '' ) );
+		//console.log(name);
+		//console.log(textValue);
+		this.setState(s => {
+			s[targetName] = targetValue;
+			this.state.update(this.state);
+		});
+	}
+	
+	render() {
+		return e(
+			'div',
+			{},
+			e(
+				'h2',
+				{},
+				this.props.column
+			),
+			e(
+				'input',
+				{
+					name: "enabled",
+					type: "checkbox",
+					checked: this.state.enabled,
+					onChange: this.inputChange
+				}
+			),
+			e( 'p', {}, 'Transform: ' ),
+			e(
+				'input',
+				{
+					name: "transform",
+					type: "text",
+					value: this.state.transform,
+					onChange: this.inputChange
+				}
+			),
+			e( 'p', {}, 'Filter: ' ),
+			e(
+				'input',
+				{
+					name: "filter",
+					type: "text",
+					value: this.state.filter,
+					onChange: this.inputChange
+				}
+			)
+		);
+
+	}
+}
 
 class CanoeDB extends React.Component {
 	constructor(props) {
@@ -102,46 +71,58 @@ class CanoeDB extends React.Component {
 		this.state = {
 			error: null,
 			isLoaded: false,
-			transmit: {},
-			receive: {
-				structure: {},
-				columns: {},
-				rows: {}
-			}
+			settings: {},
+			structure: {},
+			columns: {},
+			rows: {}
 		}
 		
-		this.updateTransmission = this.updateTransmission.bind(this);
-		this.sendTransmission = this.sendTransmission.bind(this);
+		this.update = this.update.bind(this);
+		this.transmit = this.transmit.bind(this);
 	}
 	
-	updateTransmission(args) {
+	update(newSettings = {}) {
+		//console.log('Additions');
+		//console.log(newSettings);
 		// refresh the component with changes
-		this.setState(state => {
+		let table = newSettings.table;
+		let column = newSettings.column;
+		this.setState(s => {
+			if (!s.settings.hasOwnProperty(table)) s.settings[table] = {};
+			if (!s.settings[table].hasOwnProperty(column)) s.settings[table][column] = {};
 			// default values
-			args = Object.assign(
-				{
-					table: '',
-					column: '',
-					filter: '',
-					transform: '',
-					enabled: false
-				},
-				args 
-			);
-			if(!state.transmit.hasOwnProperty(table)) state.query.input[args.table] = {};
-			if(!state.transmit[table].hasOwnProperty(column)) state.query.input[args.table][args.column] = {};
-			state.transmit[args.table][args.column].filter = args.filter;
-			state.transmit[args.table][args.column].transform = args.transform;
-			state.transmit[args.table][args.column].enabled = args.enabled;
+			console.log('Previous Settings');
+			console.log(s.settings[table][column]);
+			Object.assign( s.settings[table][column], newSettings );
+			console.log('Current Settings');
+			console.log(s.settings[table][column]);
+			// trigger a new transmission
+			this.transmit();
 		});
-		// trigger a new transmission
-		sendTransmission();
 	}
 	
-	sendTransmission() {
+	transmit() {
 		// start new transmission
-		// TODO: need to edit the transmission with the values from state.transmit
-		fetch("http://localhost:8091/json", {
+		let settings = this.state.settings;
+		console.log("Transmitting with these settings: ");
+		console.log(settings);
+		
+		let query = Object.keys(settings).sort().map(table => {
+			console.log( table );
+			return Object.keys(settings[table]).sort().map(column => {
+				console.log( column );
+				let thisCol = settings[table][column];
+				console.log( thisCol.enabled );
+				if (thisCol.enabled) {
+					return table+'.'+column+( thisCol.transform ? '.'+thisCol.transform : '' )+'='+thisCol.filter
+				} else {
+					return null;
+				}
+			});
+		}).join('&');
+		let url = "http://localhost:8091/json"+( query ? '?'+query : '' );
+		console.log('URL: '+url);
+		fetch( url, {
 			// mode: 'no-cors' // 'cors' by default
 			mode: 'cors'
 		})
@@ -150,7 +131,9 @@ class CanoeDB extends React.Component {
 			(result) => {
 				this.setState({
 					isLoaded: true,
-					receive: result
+					structure: result.structure,
+					columns: result.columns,
+					rows: result.rows
 				});
 			},
 			// Note: it's important to handle errors here
@@ -167,23 +150,14 @@ class CanoeDB extends React.Component {
 	
 	componentDidMount() {
 		// blank transmission to populate the state
-		this.sendTransmission();
+		this.transmit();
 	}
 	
 	render() {
 		
-		console.log("Rendering CanoeDB...");
-		// let e_list = Object.keys(this.state.receive.structure).sort().map((key) => {
-			// let props_obj = {
-				// name: key,
-				// update: this.updateTransmission,
-				// conf: this.transmit[key]
-			// };
-			// console.log(props_obj);
-			// return e( Table, props_obj );
-		// });
-		// console.log(e_list);
-		const { error, isLoaded, receive } = this.state;
+		console.log("Rendering CanoeDB...");		
+		
+		const { error, isLoaded, structure, rows, columns, settings } = this.state;
 		if (error) {
 			return e(
 				'div',
@@ -196,7 +170,7 @@ class CanoeDB extends React.Component {
 				e(
 					'p',
 					{},
-					JSON.stringify( receive )
+					JSON.stringify( structure )
 				)
 			);
 		} else if (!isLoaded) {
@@ -210,12 +184,47 @@ class CanoeDB extends React.Component {
 				'div',
 				{},
 				e(
-					'p',
+					// header DIV
+					'div',
 					{},
-					'JSON received!'
+					// loop through tables
+					Object.keys(structure).sort().map((table) => {
+						// table DIV
+						return e(
+							'div',
+							{},
+							e( 'h1', {}, table ),
+							// loop through columns
+							Object.keys(structure[table]).sort().map((column) => {
+								let props_obj = Object.assign(
+									{
+										table: table,
+										column: column,
+										filter: '',
+										transform: '',
+										reference: '',
+										enabled: false,
+										update: this.update
+									},
+									structure[table][column],
+									(
+										settings.hasOwnProperty(table) && settings[table].hasOwnProperty(column) ?
+										settings[table][column] : {}
+									)
+								);
+								// column Element
+								return e( ColumnHeader, props_obj );
+								// return e( 'p', {}, JSON.stringify( props_obj ) );
+							})
+						);
+					})
 				),
-				JSON.stringify( receive )
-				// ...e_list
+				e(
+					// build rows display
+					'div',
+					{},
+					e( 'p', {}, JSON.stringify( rows ) )
+				)
 			);
 		}
 	}
