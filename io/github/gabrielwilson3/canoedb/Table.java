@@ -5,9 +5,10 @@ import java.math.BigInteger;
 import java.nio.file.*;
 import java.io.File;
 import java.lang.*;
+import io.github.gabrielwilson3.canoedb.transforms.*;
 
 
-class Table {
+public class Table {
 	
 	// Table properties
 	String 					name;
@@ -25,7 +26,7 @@ class Table {
 	File					tableFile;
 
 	// Table index
-	TableIndex 				tableIndex = new TableIndex();
+	public TableIndex 		tableIndex = new TableIndex();
 	
 	// file exists
 	boolean					fileExists = false;
@@ -80,7 +81,7 @@ class Table {
 			// Load the Transform objects
 			for (String column : columnNames.keys()) {
 				if (!transformNames.read(column).equals("")) {
-					String binName = "io.github.gabrielwilson3.canoedb."+transformNames.read(column);
+					String binName = "io.github.gabrielwilson3.canoedb.transforms."+transformNames.read(column);
 					try {
 						Class aClass = classLoader.loadClass(binName);
 						Object anObject = aClass.newInstance();

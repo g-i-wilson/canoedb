@@ -4,13 +4,108 @@
 <title>CanoeDB</title>
 
 <style>
+
+	.all {
+		position: absolute;
+		top: 10px;
+		left: 10px;
+		right: 10px;
+		bottom: 10px;
+	}
+	.banner {
+		position: absolute;
+		display: inline-block;
+		top: 0px;
+		left: 0px;
+		right: 0px;
+		height: 30px;
+		overflow: hidden;
+	}
 	.header {
 		position: absolute;
-		top: 20px;
-		left: 20px;
-		right: 20px;
-		height: 200px;
+		display: inline-block;
+		top: 30px;
+		left: 0px;
+		right: 0px;
+		height: 260px;
+		overflow: auto;
+		border: 1px solid blue;
 	}
+	
+	.table {
+		display: inline-block;
+	}
+	
+	.column {
+		width: 450px;
+	}
+	
+	.rows {
+		position: absolute;
+		top: 300px;
+		left: 0px;
+		right: 0px;
+		bottom: 0px;
+		overflow: auto;
+		border: 1px solid blue;
+	}
+	
+	p {
+		margin: 0 0 0 0;
+		font: 14px arial, sans-serif;
+	}
+	
+	input[type=text] {
+		border: none;
+		border-bottom: 1px solid black;
+		font: 14px arial, sans-serif;
+	}
+	input[type=text]:focus {
+		background-color: lightblue;
+	}
+	table {
+		border-collapse: collapse;
+		width: 100%;
+		font: 14px arial, sans-serif;
+	}
+
+	th, td {
+		padding: 8px;
+		text-align: left;
+		border-bottom: 1px solid #ddd;
+	}
+
+
+	
+	.columnTitle {
+		display: inline-block;
+		width: 180px;
+		background-color: #f1f1f1;
+	}
+	.enableCheckBox {
+		display: inline-block;
+	}
+	.transformInput {
+		display: inline-block;
+		width: 80px;
+		background-color: #f1f1f1;
+	}
+	.filterInput {
+		display: inline-block;
+		width: 160px;
+	}
+	.titleText {
+		margin: 0 0 0 4px;
+		color: blue;
+		font: 16px arial, sans-serif;	
+		font-weight: bold;
+	}
+	
+	.highlighed {
+		background-color: lightblue;	
+		font-weight: bold;
+	}
+	
 
 </style>
 
@@ -18,7 +113,7 @@
 <body>
 
 
-<div id="root" class="header"></div>
+<div id="root"></div>
 
 
 <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>

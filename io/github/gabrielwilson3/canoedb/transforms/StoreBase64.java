@@ -1,12 +1,13 @@
-package io.github.gabrielwilson3.canoedb;
+package io.github.gabrielwilson3.canoedb.transforms;
 
 import java.util.Base64;
+import io.github.gabrielwilson3.canoedb.*;
 
-class StoreBase64 extends Transform {
+public class StoreBase64 extends Transform {
 
 	// Decode on read
 	@Override
-	String onRead ( String s ) {
+	public String onRead ( String s ) {
 		try {
 			byte[] decodedBytes = Base64.getDecoder().decode(s.getBytes());
 			return new String(decodedBytes);
@@ -19,7 +20,7 @@ class StoreBase64 extends Transform {
 	
 	// Encode on write
 	@Override
-	String onWrite ( String s ) {
+	public String onWrite ( String s ) {
 		byte[] encodedBytes = Base64.getEncoder().encode(s.getBytes());
 		return new String(encodedBytes);
 	}

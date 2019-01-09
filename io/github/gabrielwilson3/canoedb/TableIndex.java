@@ -5,7 +5,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.regex.Pattern;
 
-class TableIndex {
+public class TableIndex {
 
 	// Table columns (for finding row by column data)
 	// column -> datafragment -> rowData -> TableRowObject (ignores duplicate rows)
@@ -32,7 +32,7 @@ class TableIndex {
 		return this;
 	}
 	
-	Collection<TableRow> search (String col, String dataFragment) {
+	public Collection<TableRow> search (String col, String dataFragment) {
 		if (index.exists(col, dataFragment)) {
 			return index.read(col, dataFragment).values();
 		} else {

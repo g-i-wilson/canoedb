@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.File;
 import java.util.*;
+import io.github.gabrielwilson3.canoedb.transforms.*;
 
 
 public class Database {
@@ -190,7 +191,7 @@ public class Database {
 			return transformMap.read(tranName);
 		} else {
 			// Load a Transform object
-			String binName = "io.github.gabrielwilson3.canoedb."+tranName;
+			String binName = "io.github.gabrielwilson3.canoedb.transforms."+tranName;
 			try {
 				Class aClass = classLoader.loadClass(binName);
 				Object anObject = aClass.newInstance();
@@ -201,6 +202,7 @@ public class Database {
 			} catch (Exception e) {
 				System.out.println("Database: ERROR: unable to load Transform object "+binName);
 				e.printStackTrace();
+				transformMap.write( tranName, null_transform );
 				return null_transform;
 			}
 		}

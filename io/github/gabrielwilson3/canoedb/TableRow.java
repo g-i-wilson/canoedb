@@ -1,8 +1,9 @@
 package io.github.gabrielwilson3.canoedb;
 
 import java.util.*;
+import io.github.gabrielwilson3.canoedb.transforms.*;
 
-class TableRow {
+public class TableRow {
 	
 	StringMap1D<String> 	data = new StringMap1D<>(); // column -> data_string
 	StringMap1D<Transform>	transform = new StringMap1D<>();
