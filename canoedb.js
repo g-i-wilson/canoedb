@@ -40,7 +40,7 @@ class RowsTable extends React.Component {
 					'tr',
 					{},
 					headerArray.map((header) => {
-						return e( 'th', {}, header ) 
+						return e( 'th', { className: 'normalCell' }, header ) 
 					})
 				),
 				// many data rows
@@ -50,7 +50,15 @@ class RowsTable extends React.Component {
 						{},
 						// data strings
 						row.map((data) => {
-							return e( 'td', {}, data );
+							// javascript automatically resolves null to just an empty string
+							// so we have to specifically check
+							return e(
+								'td',
+								{
+									className: (data === null ? 'nullCell' : 'normalCell' )
+								},
+								data
+							);
 						})
 					)
 				})

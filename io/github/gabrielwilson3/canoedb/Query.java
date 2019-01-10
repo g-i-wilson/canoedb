@@ -219,7 +219,8 @@ public class Query {
 				for (String column : outputMap.keys(row, table)) {
 					if (t.reference(column).equals("")) {
 						String dataElement = outputMap.read(row, table, column);
-						html += "<td>"+( dataElement!=null ? dataElement : "" )+"</td>\n";
+						html += "<td>"+dataElement+"</td>\n";
+						//html += "<td>"+( dataElement!=null ? dataElement : "" )+"</td>\n";
 					}
 				}
 			}
