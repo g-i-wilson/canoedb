@@ -18,7 +18,7 @@ class RowsTable extends React.Component {
 			let rowArray = [];
 			Object.keys(this.props[row]).sort().forEach(table => {
 				Object.keys(this.props[row][table]).sort().forEach(column => {
-					!headerComplete && headerArray.push( table+'.'+column );
+					!headerComplete && headerArray.push( column );
 					rowArray.push( this.props[row][table][column] );
 				});
 			});
@@ -86,50 +86,54 @@ class ColumnHeader extends React.Component {
 	}
 	
 	render() {
-		return e(
-			'div',
-			{
-				className: 'column'
-			},
-			e(
-				'input',
+		if (this.state.reference) {
+			// hide columns that reference other tables
+			return null;
+		} else {
+			return e(
+				'div',
 				{
-					name: "enabled",
-					type: "checkbox",
-					checked: this.state.enabled,
-					onChange: this.inputChange,
-					className: 'enableCheckBox'
-				}
-			),
-			e(
-				'p',
-				{
-					className: ( this.state.enabled ? 'columnTitle highlighed' : 'columnTitle' )
+					className: 'column'
 				},
-				this.props.column+':'
-			),
-			e(
-				'input',
-				{
-					name: "filter",
-					type: "text",
-					value: this.state.filter,
-					onChange: this.inputChange,
-					className: ( this.state.enabled && this.state.filter ? 'filterInput highlighed' : 'filterInput' )
-				}
-			),
-			e(
-				'input',
-				{
-					name: "transform",
-					type: "text",
-					value: this.state.transform,
-					onChange: this.inputChange,
-					className: ( this.state.enabled && this.state.transform && this.state.filter ? 'transformInput highlighed' : 'transformInput' )
-				}
-			)
-		);
-
+				e(
+					'input',
+					{
+						name: "enabled",
+						type: "checkbox",
+						checked: this.state.enabled,
+						onChange: this.inputChange,
+						className: 'enableCheckBox'
+					}
+				),
+				e(
+					'div',
+					{
+						className: ( this.state.enabled ? 'columnTitle highlighed' : 'columnTitle' )
+					},
+					this.props.column+':'
+				),
+				e(
+					'input',
+					{
+						name: "filter",
+						type: "text",
+						value: this.state.filter,
+						onChange: this.inputChange,
+						className: ( this.state.enabled && this.state.filter ? 'filterInput highlighed' : 'filterInput' )
+					}
+				),
+				e(
+					'input',
+					{
+						name: "transform",
+						type: "text",
+						value: this.state.transform,
+						onChange: this.inputChange,
+						className: ( this.state.enabled && this.state.transform && this.state.filter ? 'transformInput highlighed' : 'transformInput' )
+					}
+				)
+			);
+		}
 	}
 }
 
@@ -242,7 +246,7 @@ class CanoeDB extends React.Component {
 					{
 						className: 'banner'
 					},
-					e( 'p', {className: 'titleText'}, 'CanoeDB' )
+					e( 'p', {className: 'insignia'}, 'CanoeDB' )
 				),
 				e(
 					// header DIV
@@ -257,34 +261,40 @@ class CanoeDB extends React.Component {
 							'div',
 							{
 								key: table,
-								className: 'table'
+								className: 'dbTable'
 							},
-							e( 'p', {className: 'titleText'}, table ),
+							e( 'div', {className: 'tableName'}, table ),
 							// loop through columns
-							Object.keys(structure[table]).sort().map((column) => {
-								let props_obj = Object.assign(
-									// default values
-									{
-										key: table+column,
-										table: table,
-										column: column,
-										filter: '',
-										transform: '',
-										reference: '',
-										enabled: false,
-										update: this.update
-									},
-									// structure returned from the database
-									structure[table][column],
-									// any settings produced by the interface
-									(
-										settings.hasOwnProperty(table) && settings[table].hasOwnProperty(column) ?
-										settings[table][column] : {}
-									)
-								);
-								// column Element
-								return e( ColumnHeader, props_obj );
-							})
+							e(
+								'div',
+								{
+									className: 'tableEnvelope'
+								},
+								Object.keys(structure[table]).sort().map((column) => {
+									let props_obj = Object.assign(
+										// default values
+										{
+											key: table+column,
+											table: table,
+											column: column,
+											filter: '',
+											transform: '',
+											reference: '',
+											enabled: false,
+											update: this.update
+										},
+										// structure returned from the database
+										structure[table][column],
+										// any settings produced by the interface
+										(
+											settings.hasOwnProperty(table) && settings[table].hasOwnProperty(column) ?
+											settings[table][column] : {}
+										)
+									);
+									// column Element
+									return e( ColumnHeader, props_obj );
+								})
+							)
 						);
 					})
 				),
