@@ -75,7 +75,7 @@ class RowsTable extends React.Component {
 					'tr',
 					{},
 					headerArray.map((header) => {
-						return e( 'th', { className: 'normalCell' }, header ) 
+						return e( 'th', {}, header ) 
 					})
 				),
 				// many data rows
@@ -108,6 +108,7 @@ class ColumnHeader extends React.Component {
 		this.state = {...props};
 
 		this.inputChange = this.inputChange.bind(this);
+		this.clearText = this.clearText.bind(this);
 	}
 
 	inputChange(event) {
@@ -124,6 +125,14 @@ class ColumnHeader extends React.Component {
 		// pass a function to setState
 		this.setState(s => {
 			s[targetName] = targetValue;
+			this.state.update(this.state);
+		});
+	}
+	
+	clearText(event) {
+		var clearTextTarget = event.target.name;
+		this.setState(s => {
+			s[clearTextTarget] = '';
 			this.state.update(this.state);
 		});
 	}
@@ -163,6 +172,7 @@ class ColumnHeader extends React.Component {
 						type: "text",
 						list: table+'.'+column,
 						value: this.state.filter,
+						onMouseDown: this.clearText,
 						onChange: this.inputChange,
 						className: ( enabled && this.state.filter ? 'filterInput highlighed' : 'filterInput' )
 					}
@@ -298,8 +308,16 @@ class CanoeDB extends React.Component {
 					{
 						className: 'banner'
 					},
-					e( 'p', {className: 'insignia'}, 'CanoeDB' ),
-					e( 'p', {className: 'databaseFolder'}, name )
+					e( 'div', {className: 'insignia'}, 'CanoeDB' ),
+					e( 'div', {className: 'databaseFolder'}, name ),
+					e(
+						'div',
+						{
+							className: 'rightControls',
+							onClick: ()=>{this.transmit(true)}
+						},
+						'+'
+					)
 				),
 				e(
 					// header DIV

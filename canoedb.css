@@ -12,7 +12,6 @@
 	left: 0px;
 	right: 0px;
 	height: 30px;
-	overflow: hidden;
 	background-color: #555E72;
 }
 .header {
@@ -71,13 +70,20 @@ table {
 }
 
 th, td {
-	padding: 8px 16px 8px 16px;
+	padding: 4px 16px 4px 16px;
 	text-align: left;
-	border-bottom: 1px solid #dddddd;
-	border-left: 1px solid #dddddd;
+	border: 1px solid #dddddd;
+	/* border-top: 1px solid #dddddd; */
+	/* border-left: 1px solid #dddddd; */
+	/* border-right: 1px solid #dddddd; */
 }
 
-
+th {
+	background-color: #555E72;
+	color: white;
+	font-size: 16px;
+	border: 0;
+}
 
 .columnTitle {
 	display: inline-block;
@@ -114,20 +120,38 @@ th, td {
 	background-color: white;
 }
 .insignia {
-	margin: 4px 8px 0 8px;
+	position: absolute;
+	left: 16px;
+	top: 3px;
+	width: auto;
+	height: auto;
 	color: #aaaaaa;
 	font: 20px arial, sans-serif;	
 	font-weight: bold;
-	display: inline-block;
-	vertical-align: middle;
 }
 .databaseFolder {
-	margin: 4px 8px 0 8px;
-	color: #eeeeee;
+	position: absolute;
+	left: 125px;
+	top: 3px;
+	width: auto;
+	height: auto;
+	color: white;
 	font: 20px arial, sans-serif;	
 	font-weight: bold;
-	display: inline-block;
-	vertical-align: middle;
+}
+.rightControls {
+	position: absolute;
+	right: 30px;
+	top: -2px;
+	width: auto;
+	height: auto;
+	color: #aaaaaa;
+	font: 30px arial, sans-serif;	
+	font-weight: bold;
+}
+.rightControls:hover {
+	color: white;
+	cursor: pointer;
 }
 
 .highlighed {
@@ -137,8 +161,7 @@ th, td {
 }
 
 .nullCell {
-	border-bottom: 0;
-	border-left: 0;
+	border: 0;
 }
 .normalCell {
 	background-color: white;
