@@ -3,6 +3,41 @@
 
 const e = React.createElement;
 
+class DataLists extends React.Component {
+	constructor(props) {
+		super(props);
+		//this.state = {...props};
+	}
+
+	render() {
+		return Object.keys(this.props).map((table) => {
+			console.log('datalists generated for '+table);
+			return Object.keys(this.props[table]).map((column) => {
+				console.log('datalist for '+column);
+				return e(
+					'datalist',
+					{
+						id: table+'.'+column
+					},
+					Object.keys(this.props[table][column]).sort((a,b) => {
+						return this.props[table][column][b]-this.props[table][column][a]
+					}).map((op) => {
+						console.log(op);
+						return e(
+							'option',
+							{
+								key: table+'.'+column+'.'+op,
+								value: op,
+							}
+						);
+					})
+				);
+			});
+		});
+	}
+}
+
+
 class RowsTable extends React.Component {
 	constructor(props) {
 		super(props);
@@ -94,6 +129,7 @@ class ColumnHeader extends React.Component {
 	}
 	
 	render() {
+		const {enabled, table, column, options} = this.state;
 		if (this.state.reference) {
 			// hide columns that reference other tables
 			return null;
@@ -108,7 +144,7 @@ class ColumnHeader extends React.Component {
 					{
 						name: "enabled",
 						type: "checkbox",
-						checked: this.state.enabled,
+						checked: enabled,
 						onChange: this.inputChange,
 						className: 'enableCheckBox'
 					}
@@ -125,9 +161,10 @@ class ColumnHeader extends React.Component {
 					{
 						name: "filter",
 						type: "text",
+						list: table+'.'+column,
 						value: this.state.filter,
 						onChange: this.inputChange,
-						className: ( this.state.enabled && this.state.filter ? 'filterInput highlighed' : 'filterInput' )
+						className: ( enabled && this.state.filter ? 'filterInput highlighed' : 'filterInput' )
 					}
 				),
 				e(
@@ -152,6 +189,7 @@ class CanoeDB extends React.Component {
 			error: null,
 			isLoaded: false,
 			settings: {},
+			name: '',
 			structure: {},
 			columns: {},
 			rows: {}
@@ -200,8 +238,12 @@ class CanoeDB extends React.Component {
 		.then(res => res.json())
 		.then(
 			(result) => {
+				console.log(result.structure);
+				console.log(result.columns);
+				console.log(result.rows)
 				this.setState({
 					isLoaded: true,
+					name: result.name,
 					structure: result.structure,
 					columns: result.columns,
 					rows: result.rows
@@ -226,9 +268,11 @@ class CanoeDB extends React.Component {
 	
 	render() {
 		
-		console.log("Rendering Interface...");		
+		console.log("Rendering Interface...");	
 		
-		const { error, isLoaded, structure, rows, columns, settings } = this.state;
+		const { error, isLoaded, name, structure, rows, columns, settings } = this.state;
+		// console.log("Columns:");
+		// console.log(columns);
 		if (error) {
 			return e(
 				'div',
@@ -254,7 +298,8 @@ class CanoeDB extends React.Component {
 					{
 						className: 'banner'
 					},
-					e( 'p', {className: 'insignia'}, 'CanoeDB' )
+					e( 'p', {className: 'insignia'}, 'CanoeDB' ),
+					e( 'p', {className: 'databaseFolder'}, name )
 				),
 				e(
 					// header DIV
@@ -304,7 +349,8 @@ class CanoeDB extends React.Component {
 								})
 							)
 						);
-					})
+					}),
+					e( DataLists, columns )
 				),
 				e(
 					// build rows display

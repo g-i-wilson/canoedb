@@ -208,5 +208,9 @@ public class Database {
 		}
 	}
 
+	// get name of the database
+	public String name () {
+		return ( databaseFolder != null ? databaseFolder.getName() : "" );
+	}
 	
 }

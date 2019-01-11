@@ -146,6 +146,9 @@ public class Query {
 	String outputJSON () {
 		log("Query: generating JSON...");
 		return	"{\n"+
+				"\"name\" : \""+
+				db.name()+
+				"\",\n"+
 				"\"structure\" : "+
 				structMap.toJSON()+
 				",\n"+

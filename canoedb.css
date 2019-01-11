@@ -38,7 +38,7 @@
 
 .dbTable {
 	display: inline-block;
-	vertical-align : top;
+	vertical-align : middle;
 	margin: 4px 8px 4px 8px;
 	min-width: 350px;
 	box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.3);
@@ -121,10 +121,19 @@ th, td {
 	display: inline-block;
 	vertical-align: middle;
 }
+.databaseFolder {
+	margin: 4px 8px 0 8px;
+	color: #eeeeee;
+	font: 20px arial, sans-serif;	
+	font-weight: bold;
+	display: inline-block;
+	vertical-align: middle;
+}
 
 .highlighed {
 	background-color: lightblue;	
-	font-weight: bold;
+	/* text-shadow: 0 0 12px lightblue, 0 0 12px lightblue, 0 0 12px lightblue; */
+	/* font-weight: bold; */
 }
 
 .nullCell {
