@@ -1,10 +1,12 @@
 package io.github.gabrielwilson3.canoedb.transforms;
 
+import java.util.*;
 import java.time.LocalDateTime;
 import io.github.gabrielwilson3.canoedb.*;
 
 public class TimeStamp extends Transform {
 
+	// auto
 	@Override
 	public String onWrite ( String s ) {
 		if (s.toLowerCase().equals("auto")) {
@@ -13,5 +15,14 @@ public class TimeStamp extends Transform {
 			return s;
 		}
 	}
+	@Override
+	public Collection<TableRow> tableRows (Table t, String column, String searchString) {
+		if (searchString.equals("auto")) {
+			return null; // make this filter N/A
+		} else {
+			return t.tableIndex.search( column, searchString );
+		}
+	}
+
 
 }

@@ -241,6 +241,7 @@ public class Table {
 	}
 	// SET DOWNHILL: continuation function for downhill function
 	void continueDownhill (Set<String> someSet) {
+		if (someSet.contains( name )) return; // no infinite table reference loops allowed
 		someSet.add( name ); // this Table is a member of this Set...
 		for (Table t : toMap.values()) {
 			someSet.add( t.name ); // ...in addition to all the Tables in toMap

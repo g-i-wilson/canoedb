@@ -39,13 +39,13 @@
 	display: inline-block;
 	vertical-align : middle;
 	margin: 4px 8px 4px 8px;
-	min-width: 350px;
+	min-width: 250px;
 	box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.3);
 }
 
 .column {
 	width: auto;
-	padding: 0 8px 0 8px;
+	padding: 0 8px 0 3px;
 }
 
 
@@ -55,14 +55,16 @@ div {
 }
 
 input[type=text] {
-	border: none;
-	border-bottom: 1px solid #dddddd;
 	font: 14px arial, sans-serif;
 	padding: 0 4px 0 4px;
 }
 input[type=text]:focus {
 	background-color: lightblue;
 }
+input[type=text]:hover {
+	background-color: lightblue;
+}
+
 table {
 	border-collapse: collapse;
 	width: 100%;
@@ -98,14 +100,28 @@ th {
 }
 .transformInput {
 	display: inline-block;
-	width: 80px;
+	width: 100px;
 	vertical-align: middle;
 	color: #888888;
+	border: 0;
+	border-bottom: 1px dotted #888888;
+	/* margin-left: 4px; */
+}
+.noTransform {
+	display: inline-block;
+	width: 20px;
+	vertical-align: middle;
+	color: #888888;
+	border: 0;
+	border-bottom: 1px dotted #888888;
+	/* margin-left: 4px; */
 }
 .filterInput {
 	display: inline-block;
 	width: 120px;
 	vertical-align: middle;
+	border: 0;
+	border-bottom: 1px solid #888888;
 }
 .tableName {
 	padding: 0 4px 0 4px;
@@ -139,23 +155,33 @@ th {
 	font: 20px arial, sans-serif;	
 	font-weight: bold;
 }
-.rightControls {
-	position: absolute;
-	right: 30px;
-	top: -2px;
+.rightControl {
 	width: auto;
 	height: auto;
-	color: #aaaaaa;
-	font: 30px arial, sans-serif;	
+	color: white;
+	padding: 0 8px 0 8px;
 	font-weight: bold;
 }
-.rightControls:hover {
-	color: white;
-	cursor: pointer;
+.addButton {
+	font: 30px arial, sans-serif;	
+	position: absolute;
+	right: 20px;
+	top: -2px;
+}
+.addButton:hover {
+	background-color: #aaaaaa;
+	/* opacity: 0.3; */
+	cursor: default;
 }
 
-.highlighed {
+
+.output {
 	background-color: lightblue;	
+	/* text-shadow: 0 0 12px lightblue, 0 0 12px lightblue, 0 0 12px lightblue; */
+	/* font-weight: bold; */
+}
+.input {
+	background-color: lightgreen;	
 	/* text-shadow: 0 0 12px lightblue, 0 0 12px lightblue, 0 0 12px lightblue; */
 	/* font-weight: bold; */
 }

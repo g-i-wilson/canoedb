@@ -142,9 +142,11 @@ public class TableRow {
 			String filter = inputMap.read(tableName, column);
 			if ( data.defined(column) ) { // filter is null if it's already been used
 				q.log( "TableRow: filter defined: "+tableName+"."+column );
+				Collection<TableRow> c = q.rows( table, column, filter );
 				// AND logic (must pass all filters)
 				if (q.logic.equals("and")) {
-					if ( q.rows( table, column, filter ).contains(this) ) {
+					if ( c==null || c.contains(this) ) {  // if null, then the Transform object has decided this filter is N/A
+					// if ( c.contains(this) ) {
 						q.log( "TableRow: filter PASSED (AND): "+filter );
 						inputMap.write(tableName, column, null);
 					} else {
@@ -153,7 +155,8 @@ public class TableRow {
 					}
 				// XOR logic (must fail all filters)
 				} else if (q.logic.equals("xor")) {
-					if ( q.rows( table, column, filter ).contains(this) ) {
+					if ( c!=null && c.contains(this) ) {  // if null, then the Transform object has decided this filter is N/A
+					// if ( c.contains(this) ) {
 						q.log( "TableRow: filter PASSED (bad) (XOR): "+filter );
 						inputMap.write(tableName, column, null);
 						return false;

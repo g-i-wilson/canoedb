@@ -172,7 +172,9 @@ public class Database {
 			q.log("Database: starting READ...");
 			for (String column : q.inputTemplate.keys( tableName )) {
 				q.log("Database: input column "+column+"...");
-				for ( TableRow tr : q.rows( t, column ) ) {
+				Collection<TableRow> c = q.rows( t, column );
+				if (c==null) continue; // if null, then the Transform object has decided this filter is N/A
+				for ( TableRow tr : c ) {
 					q.log( "Database: READ traverse starting at TableRow "+tr );
 					tr.read( q );
 				}

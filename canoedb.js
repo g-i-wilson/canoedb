@@ -118,15 +118,21 @@ class ColumnHeader extends React.Component {
 		var targetValue;
 		// check for type
 		if ( event.target.type === 'checkbox') {
-			var targetValue = event.target.checked;
+			targetValue = event.target.checked;
+			// pass a function to setState
+			this.setState(s => {
+				s[targetName] = targetValue;
+				this.state.update(this.state);
+			});
 		} else {
-			var targetValue = ( event.target.value ? event.target.value : '' );
+			targetValue = ( event.target.value ? event.target.value : '' );
+			// pass a function to setState
+			this.setState(s => {
+				s[targetName] = targetValue;
+				s.enabled = true;
+				this.state.update(this.state);
+			});
 		}
-		// pass a function to setState
-		this.setState(s => {
-			s[targetName] = targetValue;
-			this.state.update(this.state);
-		});
 	}
 	
 	clearText(event) {
@@ -161,7 +167,7 @@ class ColumnHeader extends React.Component {
 				e(
 					'div',
 					{
-						className: ( this.state.enabled ? 'columnTitle highlighed' : 'columnTitle' )
+						className: ( this.state.enabled ? ( this.state.filter ? 'columnTitle input' : 'columnTitle output' ) : 'columnTitle' )
 					},
 					this.props.column+':'
 				),
@@ -172,9 +178,9 @@ class ColumnHeader extends React.Component {
 						type: "text",
 						list: table+'.'+column,
 						value: this.state.filter,
-						onMouseDown: this.clearText,
+						onClick: this.clearText,
 						onChange: this.inputChange,
-						className: ( enabled && this.state.filter ? 'filterInput highlighed' : 'filterInput' )
+						className: ( enabled && this.state.filter ? 'filterInput input' : 'filterInput' )
 					}
 				),
 				e(
@@ -182,9 +188,10 @@ class ColumnHeader extends React.Component {
 					{
 						name: "transform",
 						type: "text",
+						list: 'transforms',
 						value: this.state.transform,
 						onChange: this.inputChange,
-						className: ( this.state.enabled && this.state.transform && this.state.filter ? 'transformInput highlighed' : 'transformInput' )
+						className: (this.state.transform ? ( this.state.enabled && this.state.filter ? 'transformInput input' : 'transformInput') : 'noTransform' )
 					}
 				)
 			);
@@ -202,7 +209,8 @@ class CanoeDB extends React.Component {
 			name: '',
 			structure: {},
 			columns: {},
-			rows: {}
+			rows: {},
+			logic: 'and'
 		}
 		
 		this.update = this.update.bind(this);
@@ -238,6 +246,7 @@ class CanoeDB extends React.Component {
 			});
 		});
 		var url = "http://localhost:8091/json"+
+			'/'+this.state.logic+
 			( writeMode ? '/write' : '' )+
 			( query.length>0 ? '?'+query.join('&') : '' );
 		console.log('GET '+url);
@@ -313,7 +322,7 @@ class CanoeDB extends React.Component {
 					e(
 						'div',
 						{
-							className: 'rightControls',
+							className: 'rightControl addButton',
 							onClick: ()=>{this.transmit(true)}
 						},
 						'+'
@@ -368,7 +377,18 @@ class CanoeDB extends React.Component {
 							)
 						);
 					}),
-					e( DataLists, columns )
+					e( DataLists, columns ),
+					e(
+						'datalist',
+						{
+							id: 'transforms'
+						},
+						e( 'option', {value:'First'} ),
+						e( 'option', {value:'Last'} ),
+						e( 'option', {value:'TimeStamp'} ),
+						e( 'option', {value:'TransmitBase64'} ),
+						e( 'option', {value:'StoreBase64'} )
+					)
 				),
 				e(
 					// build rows display
