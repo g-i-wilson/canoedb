@@ -178,7 +178,7 @@ class ColumnHeader extends React.Component {
 						type: "text",
 						list: table+'.'+column,
 						value: this.state.filter,
-						onClick: this.clearText,
+						onFocus: this.clearText,
 						onChange: this.inputChange,
 						className: ( enabled && this.state.filter ? 'filterInput input' : 'filterInput' )
 					}
