@@ -5,7 +5,6 @@
 - **Auto-dereferencing:** API queries spanning multiple tables are dereferenced automatically  
 - **Simple Referencing:** left column is always the reference ID  
 - **Reliable:** data is *appended* to CSV files (O_APPEND) and cannot be deleted.  "Transform" modifiers such as "Last" (See #API) can be used to return the latest data written.
-- **In-Memory:** In 64-bit age, cost rather than address space is typically limits memory capacity.  If the growth of your data set is roughly proportional to the size of your organization or company, and the volume of RAM you can afford, then an in-memory database makes sense.
 - **Built-in Multithreaded HTTP Server:** The Database class can be called directly, or run via the CanoeServer class.
 
 ### Prerequisites
