@@ -9,7 +9,7 @@ Java database that converts a directory of .CSV files into a database.
 	- References to other tables
 	- Class apply a transformation to any data read or written in a column (dynamically loaded)
 
-![CanoeDB SPA Screenshot](readme_images/CanoeDB-011419.png)
+![CanoeDB SPA Screenshot](readme_images/CanoeDB_screenshot.png)
 	
 ## Why Another Database?
 The motivation behind this project stems from two things:
