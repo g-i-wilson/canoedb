@@ -1,10 +1,10 @@
 # CanoeDB  
-###### A *really simple* NoSQL database on the front-end; just a directory of CSV files on the back-end. 
+###### A *simple* NoSQL database on the front-end, and just a directory of CSV files on the back-end. 
 
 - **Relational:** CSV files become tables with relationships to other tables  
 - **Auto-dereferencing:** API queries spanning multiple tables are dereferenced automatically  
 - **Simple Referencing:** left column is always the reference ID  
-- **Reliable:** data is *appended* to CSV files (O_APPEND) and cannot be deleted.  "Transform" modifiers such as "Last" (See #API) can be used to return the latest data written.
+- **Reliable:** data is *appended* to CSV files (O_APPEND) and cannot be deleted.
 - **Built-in Multithreaded HTTP Server:** The Database class can be called directly, or run via the CanoeServer class.
 
 ### Prerequisites
