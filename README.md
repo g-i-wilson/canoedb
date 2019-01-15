@@ -57,7 +57,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## Authors
 
-* **Gabe Wilson** - *Initial work* - [PurpleBooth](https://github.com/gabrielwilson3)
+* **Gabe Wilson** - *Initial work* - [gabrielwilson3](https://github.com/gabrielwilson3)
 
 See also the list of [contributors](https://github.com/gabrielwilson3/canoedb/contributors) who participated in this project.
 
