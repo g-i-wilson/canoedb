@@ -67,4 +67,4 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## Acknowledgments
 
-* The CanoeServer multithreaded webserver is based on Webserver.java by Matt Mahoney (mmahoney@cs.fit.edu)
+* The CanoeServer multithreaded webserver is based on *Webserver.java* by [Matt Mahoney](https://cs.fit.edu/~mmahoney/cse3103/java/)
