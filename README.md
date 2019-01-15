@@ -11,21 +11,71 @@ Java database that converts a directory of .CSV files into a database.
 
 ![CanoeDB SPA Screenshot](readme_images/CanoeDB_screenshot.jpg)
 	
-## Why Another Database?
-The motivation behind this project stems from two things:
-- Need for a good project to learn Java on my own
-- Frustration with SQL syntax in joining random combinations of related tables
-	- At my previous employer, I ended up writing a Perl microservice to automatically generate the back-end SQL for MySQL.*
+## Why Would I Write My Own Database?
+- motivation behind this project mainly stems from frustration in using SQL syntax to join random combinations of related tables.
+- SQL may be considered “declarative” in many cases, but the reality of following chains of references, between tables related by common cousin(s), is painfully imperative.
+- While at a previous employer, I ended up writing a microservice API layer to generate back-end SQL syntax for a MySQL database.  It seemed inefficient to compile a declarative API into imperative SQL so MySQL could compile that SQL into its internal data traversal algorithm.
+- CanoeDB is the fusion of that declarative microservice API layer directly to a table-structure traversal algorithm.
 
-Further design considerations were influenced by multiple factors:
-- I love JSON, but it's hard for a tree-like data structure to describe overly intertwined (tangled?) data -- it's not impossible, just complex. But the same data would probably be more easily described using related tables (relational database).  Unfortunately, SQL syntax makes automatically dereference random joins between large numbers of tables very painful.
-- Exporting data into CSV is probaly the simplest way to move raw data from another database into MySQL, but is laborious and error prone.  Then, to backup data in MySQL, enormous SQL files are generated.  The question in my mind has been: why not just leave the data in CSV format?
-- Appending data is typically a very robust operation, and is much more reliable than overwriting.  While there inumerable fancy ways in existance to preserve data (e.g. redudnacy, journaling, "redo" records, etc.), if you can simply limit your disk transactions to APPEND operations, then you already have a very reliable system that can indefinitely survive hard resets (if it's on top of a decent file system, such as ext4).  At most, one line of data could be currupted per hard reset.
-- CSV is likely the simplest data format acheivable, and has the unique advantage that its data can be expanded using only APPEND operations.  On top of that, it's almost universally readable by spreadsheet software, enabling alternate means of editing the database (in the famous words of Larry Wall, `There's More Than One Way To Do It` -- TMTOWTDI).
-- "ACID" is easier to attain when you don't have to juggle data in and out of memory.  And in this 64bit world, memory address space is no longer the bottleneck it once was (maybe one day it will become that again), so and an entirely in-memory database is no only feasable, but is likely desirable.  Assuming the ammount of RAM you can afford to buy is proportional to the size of your organization and to the size of your data set, then an entirely in-memory database makes sense.
-Taking each of these issues into account, the concept of CanoeDB was a *really easy* **relational NoSQL** *in-memory* database that preserves data in CSV files.
+### Tree-Structure vs. Related Tables:
+- Tree-like data structures are wonderful (e.g. JSON), but they aren’t always a silver bullet when it comes to overly intertwined and tangled data.
+- Example: the following describes a tree model of some departmental roles:
+`
+Department          Employee         Role
++------------+     +---------+      +-------------+
+|Engineering +--+--+Manager  +------+Drinks coffee|
++------------+  |  +---------+      +-------------+
+                |
+                |  +---------+      +-------------+
+                +--+Engineer1+------+Builds stuff |
+                |  +---------+      +-------------+
+                |
+                |  +---------+      +-------------+
+                +--+Engineer2+------+Builds stuff |
+                   +---------+      +-------------+
+
+- This looks great, until VP tells you he wants to see the hierarchy by Role->Employee->Department.  Or worse, Employee->Department->Role. Or both.  And he wants the Night Watchman added.
+`
+Role                 Employee           Department
++-------------+     +--------------+   +-----------+
+|Builds stuff +--+--+Engineer1     +---+Engineering|
++-------------+  |  +--------------+   +-----------+
+                 |  +--------------+   +-----------+
+                 +--+Engineer2     +---+Engineering|
+                    +--------------+   +-----------+
+                                      
++-------------+     +--------------+   +-----------+
+|Drinks coffee+--+--+Manager       +---+Engineering|
++-------------+  |  +--------------+   +-----------+
+                 |  +--------------+   +-----------+
+                 +--+Night Watchman+---+Engineering|
+                    +--------------+   +-----------+
+`
+- Behind the scenes, every tree or object structure is ultimately described with primitive tables of references (sometimes explicitly and sometimes implicitly).
+`
+    +-------------+      +----------+      +-------------------------+
+    |Role         |      |Department|      |Employee      |Dept.|Role|
++-----------------+  +--------------+  +-----------------------------+
+| 0 |Builds stuff |  | 0 |Enginering|  | 0 |Manager       |  0  | 1  |
++-----------------+  +--------------+  +-----------------------------+
+| 1 |Drinks coffee|                    | 1 |Engineer1     |  0  | 0  |
++-----------------+                    +-----------------------------+
+                                       | 2 |Engineer2     |  0  | 0  |
+                                       +-----------------------------+
+                                       | 3 |Night Watchman|  0  | 1  |
+                                       +-----------------------------+
+`
+- When you decompose a tree into tables with references, you’ll see there are end-node tables (e.g. Role & Department) and linking tables (e.g. Employee).  Technically, Employee could be an end-node table, a fourth table could link; but since the Employee table corresponds 1:1 with the linking table (in this case), we’ll just use the Employee table as the linking table.
+- What we’ve effectively accomplished is that we’ve decompiled the tree structure down into its table description.
+- We can now start at any one of the elemental tables and now build a tree-structure as we jump from table to table following references.
+
+### So How Do You Want to Store the Data?
+- In some cases you may want to store data pre-structured into a tree.  If you know beforehand how data will be structured, and if that structure will not change often, then a tree may be the ideal way to store data. 
+- If, on the other hand, you want maintain flexibility in how the data will ultimately be structured, or if you will often need to change that structure, then storing data in its elemental related tables may be instead ideal.
+- Relational databases store data in elemental tables, while document databases (e.g. MongoDB) store data in tree-like (JSON/BSON) structures (i.e. documents).  It’s possible to add intertwining and merging (as opposed to branching) links between nodes in tree structures, and this is ideal in some situations, but the complexity of the tree-structure will significantly increase.
 
 ## HTTP API
+
 
 
 ## Architecture
