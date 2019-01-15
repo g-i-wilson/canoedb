@@ -1,11 +1,11 @@
 # CanoeDB  
-###### A *really easy* Java *in-memory* NoSQL database on the front-end; just a directory of of CSV files on the back-end. 
+###### A *really easy* Java *in-memory* NoSQL database on the front-end; just a directory of CSV files on the back-end. 
  
  
-- Relational: each Comma Separated Variables (CSV) file becomes a table with relationships to other tables  
-- Auto-dereferencing: references between tables are dereferenced automatically  
-- Simple ID: left column of table is always the reference ID column  
-- Simple configuration in first three lines of CSV file:  
+- **Relational:** CSV files become tables with relationships to other tables  
+- **Auto-dereferencing:** API queries spanning multiple tables are dereferenced automatically  
+- **Simple Referencing:** left column is always the reference ID  
+- **Simple configuration:** first three lines of CSV file:  
 	```
 	+------+----------------+----------------+
 	|      | Column Title 1 | Column Title 2 |
@@ -14,20 +14,23 @@
 	+----------------------------------------+
 	|      | TimeStamp      |                |
 	+----------------------------------------+
+	```
+	```
+	+----------------------------------------+
 	|  1   | data 1         | data 2         |
 	+----------------------------------------+
 	|  N   | data na        | data nb        |
 	+------+----------------+----------------+
 	```
-- Reliable: data is *appended* to CSV files (O_APPEND), and is never deleted.  "Transform" modifiers such as "Last" (See #API) can be used to return the latest data written.
+- **Reliable:** data is *appended* to CSV files (O_APPEND) and cannot be deleted.  "Transform" modifiers such as "Last" (See #API) can be used to return the latest data written.
   
 ![CanoeDB SPA Screenshot](readme_images/CanoeDB_screenshot.jpg)  
 	  
-## Why Reinvent the Wheel?  
-- motivation behind this project mainly stems from frustration in using SQL syntax to join random combinations of related tables.  
-- SQL may be considered “declarative” in many cases, but the reality of following chains of references, between tables related by common cousin(s), is painfully imperative.  
-- While at a previous employer, I ended up writing a microservice API layer to generate back-end SQL syntax for a MySQL database.  It seemed inefficient to compile a declarative API into imperative SQL so MySQL could compile that SQL into its internal data traversal algorithm.  
-- CanoeDB is the fusion of that declarative microservice API layer directly to a table-structure traversal algorithm.  
+## Rationale for Reinvention of a Wheel:  
+- The motivation behind this project stems mainly from frustration in using SQL syntax to join random combinations of distantly related tables.  
+- SQL syntax can be declarative in simple-use cases, but for traversing chains of references bridging chasms between distantly related tables, SQL is painfully imperative.  
+- At a previous emloyer, I once wrote a microservice API layer to generate back-end SQL syntax for a MySQL database.  It seemed inefficient to compile a declarative API into imperative SQL so MySQL could compile that SQL into its internal data traversal algorithm.
+- CanoeDB is the fusion of that declarative microservice API layer with a table-structure traversal algorithm.  
   
 ### Tree-Structure vs. Related Tables:  
 - Tree-like data structures are wonderful (e.g. JSON), but they aren’t always a silver bullet when it comes to overly intertwined and tangled data.  
@@ -82,14 +85,21 @@ Or worse, `Employee -> Department -> Role` Or both.  And he wants the Night Watc
 - What we’ve effectively accomplished is that we’ve decompiled the tree structure down into its table description.  
 - We can now start at any one of the elemental tables and now build a tree-structure as we jump from table to table following references.  
   
-### So How Do You Want to Store the Data?  
+### So How Do You Want to Store Data?  
 - In some cases you may want to store data pre-structured into a tree.  If you know beforehand how data will be structured, and if that structure will not change often, then a tree may be the ideal way to store data.   
 - If, on the other hand, you want maintain flexibility in how the data will ultimately be structured, or if you will often need to change that structure, then storing data in its elemental related tables may be instead ideal.  
 - Relational databases store data in elemental tables, while document databases (e.g. MongoDB) store data in tree-like (JSON/BSON) structures (i.e. documents).  It’s possible to add intertwining and merging (as opposed to branching) links between nodes in tree structures, and this is ideal in some situations, but the complexity of the tree-structure will significantly increase.  
   
 ## API  
   
-  
+  <table>
+	<tr>
+		<th>header1</th><th>header2</th>
+	</tr><tr>
+	<td>data1</td><td>data2</td>
+	</tr>
+</table>
+	
   
 ## Architecture  
   
