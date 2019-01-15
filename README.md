@@ -11,7 +11,7 @@ Java database that converts a directory of .CSV files into a database.
   
 ![CanoeDB SPA Screenshot](readme_images/CanoeDB_screenshot.jpg)  
 	  
-## Why Would I Write My Own Database?  
+## Why Reinvent the Wheel?  
 - motivation behind this project mainly stems from frustration in using SQL syntax to join random combinations of related tables.  
 - SQL may be considered “declarative” in many cases, but the reality of following chains of references, between tables related by common cousin(s), is painfully imperative.  
 - While at a previous employer, I ended up writing a microservice API layer to generate back-end SQL syntax for a MySQL database.  It seemed inefficient to compile a declarative API into imperative SQL so MySQL could compile that SQL into its internal data traversal algorithm.  
@@ -33,9 +33,13 @@ Department          Employee         Role
                 |  +---------+      +-------------+  
                 +--+Engineer2+------+Builds stuff |  
                    +---------+      +-------------+  
-  
-- This looks great, until VP tells you he wants to see the hierarchy by Role->Employee->Department.  Or worse, Employee->Department->Role. Or both.  And he wants the Night Watchman added.  
 ```  
+- This looks great, until VP tells you he wants to see the hierarchy by 
+`Role -> Employee -> Department`
+Or worse, 
+`Employee -> Department -> Role`
+Or both.  And he wants the Night Watchman added.
+``` 
 Role                 Employee           Department  
 +-------------+     +--------------+   +-----------+  
 |Builds stuff +--+--+Engineer1     +---+Engineering|  
