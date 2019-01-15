@@ -1,13 +1,25 @@
 # CanoeDB  
-Java database that converts a directory of .CSV files into a database.  
-  
-- Relational: each CSV file becomes a table with relationships to other tables  
+###### A *really easy* Java *in-memory* NoSQL database on the front-end; just a directory of of CSV files on the back-end. 
+ 
+ 
+- Relational: each Comma Separated Variables (CSV) file becomes a table with relationships to other tables  
 - Auto-dereferencing: references between tables are dereferenced automatically  
 - Simple ID: left column of table is always the reference ID column  
-- Simple configuration.  First 3 rows include:  
-	- Column names  
-	- References to other tables  
-	- Class apply a transformation to any data read or written in a column (dynamically loaded)  
+- Simple configuration in first three lines of CSV file:  
+	```
+	+------+----------------+----------------+
+	|      | Column Title 1 | Column Title 2 |
+	+----------------------------------------+
+	|      |                | Another Table  |
+	+----------------------------------------+
+	|      | TimeStamp      |                |
+	+----------------------------------------+
+	|  1   | data 1         | data 2         |
+	+----------------------------------------+
+	|  N   | data na        | data nb        |
+	+------+----------------+----------------+
+	```
+- Reliable: data is *appended* to CSV files (O_APPEND), and is never deleted.  "Transform" modifiers such as "Last" (See #API) can be used to return the latest data written.
   
 ![CanoeDB SPA Screenshot](readme_images/CanoeDB_screenshot.jpg)  
 	  
@@ -22,38 +34,35 @@ Java database that converts a directory of .CSV files into a database.
 - Example: the following describes a tree model of some departmental roles:  
 ```  
 Department          Employee         Role  
-+------------+     +---------+      +-------------+  
-|Engineering +--+--+Manager  +------+Drinks coffee|  
-+------------+  |  +---------+      +-------------+  
++------------+     +----------+      +--------------+  
+|Engineering +--+->+ Manager  +----->+ Drinks coffee|  
++------------+  |  +----------+      +--------------+  
                 |  
-                |  +---------+      +-------------+  
-                +--+Engineer1+------+Builds stuff |  
-                |  +---------+      +-------------+  
+                |  +----------+      +--------------+  
+                +->+ Engineer1+----->+ Builds stuff |  
+                |  +----------+      +--------------+  
                 |  
-                |  +---------+      +-------------+  
-                +--+Engineer2+------+Builds stuff |  
-                   +---------+      +-------------+  
+                |  +----------+      +--------------+  
+                +->+ Engineer2+----->+ Builds stuff |  
+                   +----------+      +--------------+  
 ```  
-- This looks great, until VP tells you he wants to see the hierarchy by 
-`Role -> Employee -> Department`
-Or worse, 
-`Employee -> Department -> Role`
-Or both.  And he wants the Night Watchman added.
+- This looks great, until VP tells you he wants to see the hierarchy by `Role -> Employee -> Department`
+Or worse, `Employee -> Department -> Role` Or both.  And he wants the Night Watchman added.
 ``` 
-Role                 Employee           Department  
-+-------------+     +--------------+   +-----------+  
-|Builds stuff +--+--+Engineer1     +---+Engineering|  
-+-------------+  |  +--------------+   +-----------+  
-                 |  +--------------+   +-----------+  
-                 +--+Engineer2     +---+Engineering|  
-                    +--------------+   +-----------+  
+ Role                 Employee             Department  
++-------------+     +----------------+   +------------+  
+|Builds stuff +--+->+ Engineer1      +-->+ Engineering|  
++-------------+  |  +----------------+   +------------+  
+                 |  +----------------+   +------------+  
+                 +->+ Engineer2      +-->+ Engineering|  
+                    +----------------+   +------------+  
                                         
-+-------------+     +--------------+   +-----------+  
-|Drinks coffee+--+--+Manager       +---+Engineering|  
-+-------------+  |  +--------------+   +-----------+  
-                 |  +--------------+   +-----------+  
-                 +--+Night Watchman+---+Engineering|  
-                    +--------------+   +-----------+  
++-------------+     +----------------+   +------------+  
+|Drinks coffee+--+->+ Manager        +-->+ Engineering|  
++-------------+  |  +----------------+   +------------+  
+                 |  +----------------+   +------------+  
+                 +->+ Night Watchman +-->+ Engineering|  
+                    +----------------+   +------------+  
 ```  
 - Behind the scenes, every tree or object structure is ultimately described with primitive tables of references (sometimes explicitly and sometimes implicitly).  
 ```  
@@ -78,7 +87,7 @@ Role                 Employee           Department
 - If, on the other hand, you want maintain flexibility in how the data will ultimately be structured, or if you will often need to change that structure, then storing data in its elemental related tables may be instead ideal.  
 - Relational databases store data in elemental tables, while document databases (e.g. MongoDB) store data in tree-like (JSON/BSON) structures (i.e. documents).  It’s possible to add intertwining and merging (as opposed to branching) links between nodes in tree structures, and this is ideal in some situations, but the complexity of the tree-structure will significantly increase.  
   
-## HTTP API  
+## API  
   
   
   
