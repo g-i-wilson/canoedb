@@ -70,46 +70,38 @@ class ClientHandler extends Thread {
 	// Read the HTTP request, respond, and close the connection
 	public void run() {
 		try {
+			
 			System.out.println("\n\n====\nClientHandler: session "+sessionId+" opened...");
 			
-			// Query object
-			Query q = database.query( sessionId );
-			q.log("REQUEST INITIATED");
+			Request req = new Request( socket, sessionId );
+			Response res = new Response( socket, sessionId );
+			Query q = new Query( database, sessionId );
 			
-			// Open connections to the socket
-			PrintWriter out	= new PrintWriter(socket.getOutputStream(), true); // autoFlush true
-
-			// Request object
-			Request r = new Request( socket, sessionId );
-			q.log("HTTP REQUEST READ");
+			// HTTP response
+			for ( String keyword : req.path() ) {
+				switch (keyword) {
+					case "json" :
+						q.execute( req.path(), req.data() );
+						res.outputJSON( q );
+						break;
+					case "csv" :
+						q.execute( req.path(), req.data() );
+						res.outputCSV( q );
+						break;
+					case "form" :
+						q.execute( req.path(), req.data() );
+						res.outputForm( q );
+						break;
+					case "spa" :
+						res.outputResource( "spa" );
+						break;
+					default :
+						res.outputResource( "spa" );
+						break;
+				}
+			}			
 			
-			// Send the Request data to the Query
-			q.parse( r.data() );
-			q.log("REQUEST DATA PARSED");
-			
-			// Send each REST command from the Request object to the Query object
-			for ( String keyword : r.path() ) q.command( keyword );
-			q.log("COMMAND KEYWORDS PARSED");
-			
-			// Send the HTTP text string back to the client
-			out.print(
-				"HTTP/1.0 200 OK\r\n"+
-				"Content-type: "+q.mime()+"\r\n"+
-				"Access-Control-Allow-Origin: *\r\n"+
-				"\r\n"+
-				q.output()
-			);
-			q.log("HTTP RESPONCE WRITTEN");
-			
-			// close the connection
-			out.close();
-			q.log("OUTPUT STREAM CLOSED");
 			socket.close();
-			q.log("SOCKET CLOSED");
-			
-			// print the Query log
-			System.out.print( q.logString() );
-			
 			System.out.println("\nClientHandler: session "+sessionId+" closed.\n====\n\n");
 		}
 		catch (Exception x) {

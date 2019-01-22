@@ -34,6 +34,14 @@ public class TableRow {
 		return data.hash();
 	}
 	
+	// data is deep-cloned into new objct (all others are just referenced to original object)
+	public TableRow cloned () {
+		TableRow tr = new TableRow( table, id, data.cloned() );
+		tr.to = to;
+		tr.from = from;
+		return tr;
+	}
+	
 	// link TO
 	boolean linkTo ( TableRow tr ) {
 		if (!to.contains(tr)) {
@@ -55,14 +63,14 @@ public class TableRow {
 	}
 	
 	// WRITE a StringMap1D
-	TableRow write ( StringMap1D<String> map ) {
+	public TableRow write ( StringMap1D<String> map ) {
 		for (String column : map.keys()) {
 			write( column, data.write( column, map.read( column ) ) );
 		}
 		return this;
 	}
 	// WRITE a specific data element (optional Transform override)
-	TableRow write ( String column, String dataElement, Transform tran ) {
+	public TableRow write ( String column, String dataElement, Transform tran ) {
 		if (tran!=null)
 			data.write( column, tran.onWrite(dataElement) );
 		else
@@ -70,7 +78,7 @@ public class TableRow {
 		return this;
 	}
 	// WRITE a specific data element
-	TableRow write ( String column, String dataElement ) {
+	public TableRow write ( String column, String dataElement ) {
 		if (transform.defined(column))
 			data.write( column, transform.read(column).onWrite(dataElement) );
 		else
@@ -78,14 +86,14 @@ public class TableRow {
 		return this;
 	}
 	// READ a specific data element (ignoring Query)
-	String read ( String column ) {
+	public String read ( String column ) {
 		if (transform.defined(column))
 			return transform.read(column).onRead( data.read(column) );
 		else
 			return data.read( column );
 	}
 	// READ a specific data element (checking for override Transform in Query)
-	String read ( String column, Query q ) {
+	public String read ( String column, Query q ) {
 		String tableName = table.name;
 		if (q.transformMap.defined(tableName, column)) {
 			Transform tran = q.transformMap.read(tableName, column);
@@ -103,12 +111,12 @@ public class TableRow {
 	
 	
 	// READ UPHILL traverse (recursive)
-	void read ( Query q ) {
+	public void readTraverse ( Query q ) {
 		if (from.size() > 0) {
 			// start traversing uphill toward an unknown number of peaks
 			for (TableRow tr : from) {
 				q.log( "TableRow: / UPHILL: "+table.name+":"+id+" -> "+tr.table.name+":"+tr.id );
-				tr.read( q );
+				tr.readTraverse( q );
 			}
 		} else {
 			// make sure this is a new "origin" to start downhill from
@@ -119,13 +127,13 @@ public class TableRow {
 			StringMap2D<String> inputMap = q.inputTemplate.cloned();
 			StringMap2D<String> outputMap = q.outputTemplate.cloned();
 			List<Table> tablesTraversed = new ArrayList<>();
-			if (traverseRead( inputMap, outputMap, tablesTraversed, q ))
+			if (readTraverseCont( inputMap, outputMap, tablesTraversed, q ))
 				q.rowMap.write( outputMap.hash(), outputMap.map );
 		}
 	}
 	
 	// READ DOWNHILL traverse (recursive)
-	private boolean traverseRead (
+	private boolean readTraverseCont (
 		StringMap2D<String> inputMap, // transitions: populated -> null
 		StringMap2D<String> outputMap, // transitions: null -> populated
 		List<Table> tablesTraversed,
@@ -188,7 +196,7 @@ public class TableRow {
 			if (tr.table==null || !tablesTraversed.contains(tr.table)) {
 				q.log( "TableRow: \\ DOWNHILL: "+tableName+":"+id+" -> "+tr.table.name+":"+tr.id );
 				// Call the referenced tableRow (fast-tracking any false return);
-				if (! tr.traverseRead( inputMap, outputMap, tablesTraversed, q ) ) return false;
+				if (! tr.readTraverseCont( inputMap, outputMap, tablesTraversed, q ) ) return false;
 			}
 		}
 		
