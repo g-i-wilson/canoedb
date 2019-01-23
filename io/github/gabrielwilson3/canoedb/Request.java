@@ -72,7 +72,7 @@ public class Request {
 					header.write( split_tuple[0], split_tuple[1] );
 				}
 			}
-			System.out.println( "\n"+"["+sessionId+"] Request: "+firstLine+"\n"+header );
+			System.out.println( "["+sessionId+"] Request: "+firstLine+"\n"+header );
 			
 				
 			// read HTTP body (read in bytes...)
@@ -133,7 +133,7 @@ public class Request {
 			}
 			
 		} catch (Exception e) {
-			System.out.println("\n["+sessionId+"] Request: ERROR reading from socket");
+			System.out.println("["+sessionId+"] Request: ERROR reading from socket");
 			e.printStackTrace();
 		}		
 		

@@ -100,7 +100,7 @@ class ClientHandler extends Thread {
 					// Log query settings
 					System.out.println("["+sessionId+"] ClientHandler: format="+format+" writeMode="+writeMode+" logic="+logic);
 				} catch (Exception e) {
-					System.out.println("ClientHandler: ERROR unable to read request from socket.");
+					System.out.println("["+sessionId+"] ClientHandler: ERROR unable to read request from socket.");
 					System.out.println(e);
 					e.printStackTrace(System.out);
 				}
@@ -111,7 +111,7 @@ class ClientHandler extends Thread {
 					// Print database traversal log
 					System.out.print(q.logString());
 				} catch (Exception e) {
-					System.out.println("ClientHandler: ERROR unable to execute query.");
+					System.out.println("["+sessionId+"] ClientHandler: ERROR unable to execute query.");
 					System.out.println(e);
 					e.printStackTrace(System.out);
 				}
@@ -120,13 +120,13 @@ class ClientHandler extends Thread {
 					// Write the response
 					res.write( q, format );
 				} catch (Exception e) {
-					System.out.println("ClientHandler: ERROR unable to write response to socket.");
+					System.out.println("["+sessionId+"] ClientHandler: ERROR unable to write response to socket.");
 					System.out.println(e);
 					e.printStackTrace(System.out);
 				}
 				
 			} catch (Exception e) {
-				System.out.println("ClientHandler: ERROR thread exception (socket closed gracefully).");
+				System.out.println("["+sessionId+"] ClientHandler: ERROR thread exception (socket closed gracefully).");
 				System.out.println(e);
 				e.printStackTrace(System.out);
 			}
@@ -135,10 +135,10 @@ class ClientHandler extends Thread {
 			socket.close();
 			
 			// Log session end
-			System.out.println("\n["+sessionId+"] ClientHandler: session closed.\n====\n\n");
+			System.out.println("["+sessionId+"] ClientHandler: session closed.\n====\n\n");
 			
 		} catch (Exception e) {
-			System.out.println("ClientHandler: ERROR thread exception (ungracefully caught exception).");
+			System.out.println("["+sessionId+"] ClientHandler: ERROR thread exception (ungracefully caught exception).");
 			System.out.println(e);
 			e.printStackTrace(System.out);
 		}
