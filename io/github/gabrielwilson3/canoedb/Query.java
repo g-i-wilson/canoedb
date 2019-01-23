@@ -141,28 +141,10 @@ public class Query {
 
 	
 	// Get the output String from this query
-	public void execute ( String[] keywords, String data ) {
+	public void execute ( String data, boolean w, String l ) {
 		// Query settings
-		log( "Query: configuring..." );
-		for ( String keyword : keywords ) {
-			switch (keyword) {
-				case "and" :
-					logic = "and";
-					break;
-				case "or" :
-					logic = "or";
-					break;
-				case "xor" :
-					logic = "xor";
-					break;
-				case "write" :
-					write = true;
-					break;
-				case "read" :
-					write = false;
-					break;
-			}
-		}
+		write = w;
+		logic = l;
 		// Query key-value pairs
 		log( "Query: parsing data..." );
 		parse( data );
@@ -218,7 +200,7 @@ public class Query {
 		long usCurrent = (currentTime - startTime)/1000;
 		long usInterval = (currentTime - intervalTime)/1000;
 		intervalTime = currentTime;
-		logText += sessionId+"-> ["+usInterval+", "+usCurrent+"] "+s+"\n";
+		logText += "["+sessionId+"] ["+usInterval+", "+usCurrent+"] "+s+"\n";
 	}
 	public String logString () {
 		return logText;
