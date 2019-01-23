@@ -166,7 +166,7 @@ public class Database {
 			if (q.write) {
 				q.log("Database: starting WRITE...");
 				q.log( "Database: WRITE traverse starting at Table "+tableName );
-				t.write( q );
+				t.writeTraverse( q );
 			}
 			// READ (searches for the string as though it's a begins-with fragment)
 			q.log("Database: starting READ...");
@@ -176,7 +176,7 @@ public class Database {
 				if (c==null) continue; // if null, then the Transform object has decided this filter is N/A
 				for ( TableRow tr : c ) {
 					q.log( "Database: READ traverse starting at TableRow "+tr );
-					tr.read( q );
+					tr.readTraverse( q );
 				}
 			}
 		}

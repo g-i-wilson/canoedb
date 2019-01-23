@@ -44,10 +44,10 @@ public class CanoeServer {
 				sessionId++;
 				new ClientHandler(socket, database, sessionId);  // Handle the client in a separate thread
 			}
-				catch (Exception x) {
+				catch (Exception e) {
 				System.out.println("CanoeServer: Server exception caught.");
-				System.out.println(x);
-				x.printStackTrace(System.out);
+				System.out.println(e);
+				e.printStackTrace(System.out);
 			}
 		}
 	}
@@ -70,51 +70,77 @@ class ClientHandler extends Thread {
 	// Read the HTTP request, respond, and close the connection
 	public void run() {
 		try {
-			System.out.println("\n\n====\nClientHandler: session "+sessionId+" opened...");
 			
-			// Query object
-			Query q = database.query( sessionId );
-			q.log("REQUEST INITIATED");
+			// Log session start
+			System.out.println("\n\n====\n["+sessionId+"] ClientHandler: session opened...");
 			
-			// Open connections to the socket
-			PrintWriter out	= new PrintWriter(socket.getOutputStream(), true); // autoFlush true
-
-			// Request object
-			Request r = new Request( socket, sessionId );
-			q.log("HTTP REQUEST READ");
+			try {
+				// Object namespace and defaults
+				Request req = new Request( socket, sessionId );
+				Response res = new Response( socket, sessionId );
+				Query q = new Query( database, sessionId );
+				String format = "spa";
+				boolean writeMode = false;
+				String logic = "and";
+				
+				try {
+					// Configure the query using the requested path as settings
+					for ( String setting : req.path() ) {
+						switch (setting.toLowerCase()) {
+							case "json" : 	format = 	"json";	break;
+							case "csv" : 	format = 	"csv"; 	break;
+							case "form" : 	format = 	"form"; break;
+							case "write" : 	writeMode =	true; 	break;
+							case "and" : 	logic = 	"and"; 	break;
+							case "or" : 	logic = 	"or"; 	break;
+							case "xor" : 	logic = 	"xor"; 	break;
+						}
+					}
+					
+					// Log query settings
+					System.out.println("["+sessionId+"] ClientHandler: format="+format+" writeMode="+writeMode+" logic="+logic);
+				} catch (Exception e) {
+					System.out.println("ClientHandler: ERROR unable to read request from socket.");
+					System.out.println(e);
+					e.printStackTrace(System.out);
+				}
+				
+				try {
+					// Execute the query with any query data received
+					q.execute( req.data(), writeMode, logic );
+					// Print database traversal log
+					System.out.print(q.logString());
+				} catch (Exception e) {
+					System.out.println("ClientHandler: ERROR unable to execute query.");
+					System.out.println(e);
+					e.printStackTrace(System.out);
+				}
+				
+				try {
+					// Write the response
+					res.write( q, format );
+				} catch (Exception e) {
+					System.out.println("ClientHandler: ERROR unable to write response to socket.");
+					System.out.println(e);
+					e.printStackTrace(System.out);
+				}
+				
+			} catch (Exception e) {
+				System.out.println("ClientHandler: ERROR thread exception (socket closed gracefully).");
+				System.out.println(e);
+				e.printStackTrace(System.out);
+			}
 			
-			// Send the Request data to the Query
-			q.parse( r.data() );
-			q.log("REQUEST DATA PARSED");
-			
-			// Send each REST command from the Request object to the Query object
-			for ( String keyword : r.path() ) q.command( keyword );
-			q.log("COMMAND KEYWORDS PARSED");
-			
-			// Send the HTTP text string back to the client
-			out.print(
-				"HTTP/1.0 200 OK\r\n"+
-				"Content-type: "+q.mime()+"\r\n"+
-				"Access-Control-Allow-Origin: *\r\n"+
-				"\r\n"+
-				q.output()
-			);
-			q.log("HTTP RESPONCE WRITTEN");
-			
-			// close the connection
-			out.close();
-			q.log("OUTPUT STREAM CLOSED");
+			// Close the socket
 			socket.close();
-			q.log("SOCKET CLOSED");
 			
-			// print the Query log
-			System.out.print( q.logString() );
+			// Log session end
+			System.out.println("\n["+sessionId+"] ClientHandler: session closed.\n====\n\n");
 			
-			System.out.println("\nClientHandler: session "+sessionId+" closed.\n====\n\n");
-		}
-		catch (Exception x) {
-			System.out.println("ClientHandler: thread exception caught.");
-			x.printStackTrace(System.out);
+		} catch (Exception e) {
+			System.out.println("ClientHandler: ERROR thread exception (ungracefully caught exception).");
+			System.out.println(e);
+			e.printStackTrace(System.out);
 		}
 	}
 }

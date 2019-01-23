@@ -39,12 +39,9 @@ public class Query {
 	StringMap3D<String> outputMap = rowMap;
 
 	// Query properties
-	int			sessionId;
-	String		output 		= "";
-	boolean 	write 		= false;
-	String 		logic 		= "and";
-	String		format		= "form";
-	String 		mime 		= "text/html; charset=utf-8";
+	int 		sessionId;
+	boolean 	write 	= false;
+	String 		logic 	= "and";
 	
 	// Query timing and messages
 	long		intervalTime;
@@ -129,7 +126,7 @@ public class Query {
 		}
 	}
 	
-	// refresh the structure of the database
+	// structure of the database
 	void databaseStructure () {
 		for (String table : db.tables()) {
 			Table t = db.table(table);
@@ -142,136 +139,15 @@ public class Query {
 		}
 	}
 
-	// Create a JSON string from the outputMap
-	String outputJSON () {
-		log("Query: generating JSON...");
-		return	"{\n"+
-				"\"name\" : \""+
-				db.name()+
-				"\",\n"+
-				"\"structure\" : "+
-				structMap.toJSON()+
-				",\n"+
-				"\"columns\" : "+
-				colMap.toJSON()+
-				",\n"+
-				"\"rows\" : "+
-				rowMap.toJSON()+
-				"\n}";
-	}
-
-	// Create a CSV string from the outputMap
-	String outputCSV () {
-		log("Query: generating CSV...");
-		String csv = "";
-		return csv;
-	}
 	
-	// Generate interactive form HTML from the outputMap
-	String outputForm () {
-		log("Query: generating form HTML...");
-		// start HTML and start the form table
-		String html = 
-			"<html>\n<head>\n<title>CanoeDB</title>\n<style>\n"+
-			"body { font-family:sans-serif; }"+
-			"div { width:100%; overflow-x:auto; overflow-y:hidden; }\n"+
-			"table { border-collapse:collapse; table-layout:fixed; }\n"+
-			"th, td { padding:10px; text-align:left; }\n"+
-			"</style></head>\n<body>\n<div>\n<form id=\"main_form\" method=\"post\">\n<table>\n<tr>\n";
-		// loop through all the tables and columns
-		for (String table : db.tables()) {
-			Table t = db.table(table);
-			for (String column : t.columns()) {
-				if (t.reference(column).equals("")) {
-					html +=
-						"<td>"+table+"<br>"+column+"<br>"+
-						"<input name=\""+table+"."+column+"\" list=\""+table+"."+column+"_list\" "+
-						"value=\""+(inputTemplate.read(table, column)!=null ? inputTemplate.read(table, column) : "")+"\" "+
-						"onchange=\"document.getElementById('main_form').submit()\" "+
-						"onblur=\"document.getElementById('main_form').submit()\" "+
-						"onfocus=\"this.value=''\" "+
-						"size=5>\n"+
-						"</td>\n<datalist id=\""+table+"."+column+"_list\">\n";
-					for (String data : colMap.keys(table, column)) {
-						html += "<option value=\""+data+"\">\n";
-					}
-					html += "</datalist>\n";
-				}
-			}
-		}
-		// complete the form table and start the output table
-		html += "</tr>\n</table>\n</form>\n</div>\n<br>\n<div>\n<table>\n<tr>";
-		// table headers
-		for (String row : outputMap.keys()) {
-			for (String table : outputMap.keys(row)) {
-				Table t = db.table(table);
-				for (String column : outputMap.keys(row, table)) {
-					if (t.reference(column).equals("")) {
-						html += "<th>"+table+"<br>"+column+"</th>\n";
-					}
-				}
-			}
-			break;
-		}
-		html += "</tr>\n";
-		// table rows
-		for (String row : outputMap.keys()) {
-			html += "<tr>\n";
-			for (String table : outputMap.keys(row)) {
-				Table t = db.table(table);
-				for (String column : outputMap.keys(row, table)) {
-					if (t.reference(column).equals("")) {
-						String dataElement = outputMap.read(row, table, column);
-						html += "<td>"+dataElement+"</td>\n";
-						//html += "<td>"+( dataElement!=null ? dataElement : "" )+"</td>\n";
-					}
-				}
-			}
-			html += "</tr>\n";
-		}
-		// complete the output table and complete HTML
-		html += "</table>\n</div>\n</body>\n</html>\n";
-		log("HTML complete");
-		return html;
-	}
-	
-	// Set the execution settings for this query
-	public Query command (String c) {
-		log("Query: command \""+c+"\"");
-		switch (c) {
-			case "and" :
-				logic = "and";
-				break;
-			case "or" :
-				logic = "or";
-				break;
-			case "xor" :
-				logic = "xor";
-				break;
-			case "write" :
-				write = true;
-				break;
-			case "read" :
-				write = false;
-				break;
-			case "json" :
-				format = "json";
-				mime = "application/json; charset=utf-8";
-				break;
-			case "csv" :
-				format = "csv";
-				mime = "text/csv; charset=utf-8";
-				break;
-			case "form" :
-				format = "form";
-				mime = "text/html; charset=utf-8";
-				break;
-		}
-		return this;
-	}
-
 	// Get the output String from this query
-	public String output () {
+	public void execute ( String data, boolean w, String l ) {
+		// Query settings
+		write = w;
+		logic = l;
+		// Query key-value pairs
+		log( "Query: parsing data..." );
+		parse( data );
 		// log filters (input) and columns (output)
 		log( "Query: input: "+inputTemplate );
 		log( "Query: output: "+outputTemplate );
@@ -283,24 +159,8 @@ public class Query {
 		mapToColumns();
 		// refresh the structure of the database
 		databaseStructure();
-		// return the query results using the data format requested
-		switch(format) {
-			case "json" :
-				return outputJSON();
-			case "csv" :
-				return outputCSV();
-			case "form" :
-				return outputForm();
-			default:
-				return outputForm();
-		}
 	}
 	
-	// Get the MIME format
-	public String mime () {
-		return mime;
-	}
-
 	// Parse the query string as CGI key=value&key=value tuples
 	public Query parse (String query) {
 		// loop through cgi data query and directly map input, output, and operation data
@@ -340,7 +200,7 @@ public class Query {
 		long usCurrent = (currentTime - startTime)/1000;
 		long usInterval = (currentTime - intervalTime)/1000;
 		intervalTime = currentTime;
-		logText += sessionId+"-> ["+usInterval+", "+usCurrent+"] "+s+"\n";
+		logText += "["+sessionId+"] ["+usInterval+", "+usCurrent+"] "+s+"\n";
 	}
 	public String logString () {
 		return logText;

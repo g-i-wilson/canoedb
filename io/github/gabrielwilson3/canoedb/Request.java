@@ -72,27 +72,27 @@ public class Request {
 					header.write( split_tuple[0], split_tuple[1] );
 				}
 			}
-			System.out.println( "\n"+sessionId+"-> Request: "+firstLine+"\n"+header );
+			System.out.println( "\n"+"["+sessionId+"] Request: "+firstLine+"\n"+header );
 			
 				
 			// read HTTP body (read in bytes...)
 			if (header.defined("Content-Length")) {
 				// get Content-Length in an int
 				int content_length = Integer.parseInt( header.read("Content-Length") );
-				System.out.println( sessionId+"-> Request: Content-Length="+content_length );
+				System.out.println( "["+sessionId+"] Request: Content-Length="+content_length );
 				// read Content-Length bytes from the socket
 				byte[] body_bytes = new byte[content_length];
 				// ...now convert bytes to a String.
 				if (stream.read( body_bytes ) < 1) {
 					// check for zero bytes (0) or end of stream (-1)
-					System.out.println( sessionId+"-> Request: body: no data received" );
+					System.out.println( "["+sessionId+"] Request: body: no data received" );
 				} else {
 					// convert the body_bytes into the data String
 					data = new String( body_bytes );
-					System.out.println( sessionId+"-> Request: body: "+data );
+					System.out.println( "["+sessionId+"] Request: body: "+data );
 				}
 			} else if (type.equals("POST")) {
-				System.out.println( sessionId+"-> Request: ERROR: Content-Length not defined" );
+				System.out.println( "["+sessionId+"] Request: ERROR: Content-Length not defined" );
 			}
 
 			
@@ -128,12 +128,12 @@ public class Request {
 				
 			} else {
 				
-				System.out.println(sessionId+"-> Request: didn't recognize GET or POST request.");
+				System.out.println("["+sessionId+"] Request: didn't recognize GET or POST request.");
 				
 			}
 			
 		} catch (Exception e) {
-			System.out.println("\n"+sessionId+"-> Request: ERROR reading from socket");
+			System.out.println("\n["+sessionId+"] Request: ERROR reading from socket");
 			e.printStackTrace();
 		}		
 		

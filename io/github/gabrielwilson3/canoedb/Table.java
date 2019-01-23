@@ -250,7 +250,7 @@ public class Table {
 	}
 
 	// WRITE UPHILL traverse (recursive)
-	void write ( Query q ) {
+	void writeTraverse ( Query q ) {
 		// if we're high enough up the mountain (toward any of the peaks) to have all tables (containsAll)
 		if (toSet.containsAll( q.inputTemplate.keys() )) {
 			// start traversing downhill from this peak
@@ -260,18 +260,18 @@ public class Table {
 			q.writeOrigins.add(this);
 			// create the peak table row and kick-off the downhill traversal
 			q.log( "Table: * PEAK: "+name );
-			traverseWrite( tablesTraversed, q );
+			writeTraverseCont( tablesTraversed, q );
 		} else {
 			// continue trekking uphill
 			for (Table t : fromList) {
 				q.log( "Table: / UPHILL: "+name+" -> "+t.name );
-				t.write( q );
+				t.writeTraverse( q );
 			}
 		}
 	}
 	
 	// WRITE DOWNHILL traverse (recursive)
-	private TableRow traverseWrite (
+	private TableRow writeTraverseCont (
 		List<Table> tablesTraversed,
 		Query q
 	) {
@@ -291,7 +291,7 @@ public class Table {
 			} else if (toMap.defined(column)) {
 				Table t = toMap.read(column);
 				q.log( "Table: \\ DOWNHILL: "+name+" -> "+t.name );
-				TableRow other_tr = t.traverseWrite(tablesTraversed, q);
+				TableRow other_tr = t.writeTraverseCont(tablesTraversed, q);
 				if (other_tr!=null) {
 					tr.write( column, other_tr.id );
 					tr.linkTo( other_tr );
