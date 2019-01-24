@@ -201,8 +201,13 @@ public class TableRow {
 		}
 		
 		// ok, we're done with this TableRow...
-		return true;
-		
+		if (q.nullsAllowed) {
+			// we're OK with some blanks being left as "null"
+			return true;
+		} else {
+			// otherwise, if all the blanks haven't been filled in by now, then we disqualify this row and fast-track back up the the tree as false.
+			return outputMap.noNulls();
+		}
 	}
 
 }

@@ -77,6 +77,7 @@ public class Table {
 			columnNames		= blankMap( columns );
 			referenceNames	= twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
 			transformNames = twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
+			System.out.println(columnNames);
 			fileExists = true;
 			// Load the Transform objects
 			for (String column : columnNames.keys()) {
@@ -105,6 +106,7 @@ public class Table {
 				//System.out.println("Table: read row "+tr.data.toString());
 				checkRowId( tr.id );
 				logTableRow( tr );
+				System.out.println(tr);
 			}
 			// Scanner suppresses io exceptions
 			if (sc.ioException() != null) System.out.println( "Table: file io exception: "+sc.ioException() );
@@ -237,14 +239,15 @@ public class Table {
 	// SET DOWNHILL (START): all tables reachable downhill from this table
 	void downhill () {
 		// grab this Table's toSet, and use that in the recursive continueDownhill function
+		toSet.add( name ); // this table
 		continueDownhill( toSet );
+		System.out.println(name+": toSet: "+toSet);
 	}
 	// SET DOWNHILL: continuation function for downhill function
 	void continueDownhill (Set<String> someSet) {
-		if (someSet.contains( name )) return; // no infinite table reference loops allowed
-		someSet.add( name ); // this Table is a member of this Set...
 		for (Table t : toMap.values()) {
-			someSet.add( t.name ); // ...in addition to all the Tables in toMap
+			if (someSet.contains( t.name )) continue; // skip if alread in the set -- no infinite table reference loops allowed
+			someSet.add( t.name );
 			t.continueDownhill( someSet );
 		}
 	}
@@ -253,6 +256,7 @@ public class Table {
 	void writeTraverse ( Query q ) {
 		// if we're high enough up the mountain (toward any of the peaks) to have all tables (containsAll)
 		if (toSet.containsAll( q.inputTemplate.keys() )) {
+			q.log("SET: "+toSet);
 			// start traversing downhill from this peak
 			List<Table> tablesTraversed = new ArrayList<>();
 			// make sure this is a new "origin" to start downhill from

@@ -40,8 +40,9 @@ public class Query {
 
 	// Query properties
 	int 		sessionId;
-	boolean 	write 	= false;
-	String 		logic 	= "and";
+	boolean 	write = false;
+	boolean		nullsAllowed = false;
+	String 		logic = "and";
 	
 	// Query timing and messages
 	long		intervalTime;
@@ -83,10 +84,13 @@ public class Query {
 	// Filtered set of TableRows from a Table (specifiy filter)
 	public Collection<TableRow> rows ( Table t, String column, String filter ) {
 		if (transformMap.defined( t.name, column )) {
-			log("Query: using CUSTOM Transform '"+transformNames.read( t.name, column )+"' with filter '"+filter+"', to find TableRows in "+t.name);
+			log("Query: using QUERY Transform '"+transformNames.read( t.name, column )+"' with filter '"+filter+"', to find TableRows in "+t.name);
 			return transformMap.read( t.name, column ).tableRows( t, column, filter );
+		} else if (t.transformMap.defined(column)) {
+			log("Query: using TABLE Transform '"+transformNames.read( t.name, column )+"' with filter '"+filter+"', to find TableRows in "+t.name);
+			return t.transformMap.read( column ).tableRows( t, column, filter );
 		} else {
-			log("Query: using DEFAULT Transform '"+t.transformNames.read( column )+"' with filter '"+filter+"', to find TableRows in "+t.name);
+			log("Query: using NULL Transform '"+t.transformNames.read( column )+"' with filter '"+filter+"', to find TableRows in "+t.name);
 			return t.null_transform.tableRows( t, column, filter );
 		}
 	}
@@ -141,10 +145,11 @@ public class Query {
 
 	
 	// Get the output String from this query
-	public void execute ( String data, boolean w, String l ) {
+	public void execute ( String data, boolean w, String l, boolean n ) {
 		// Query settings
 		write = w;
 		logic = l;
+		nullsAllowed = n;
 		// Query key-value pairs
 		log( "Query: parsing data..." );
 		parse( data );

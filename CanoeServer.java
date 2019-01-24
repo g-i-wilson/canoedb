@@ -82,23 +82,34 @@ class ClientHandler extends Thread {
 				String format = "spa";
 				boolean writeMode = false;
 				String logic = "and";
+				boolean nullsAllowed = true;
 				
 				try {
 					// Configure the query using the requested path as settings
 					for ( String setting : req.path() ) {
 						switch (setting.toLowerCase()) {
-							case "json" : 	format = 	"json";	break;
-							case "csv" : 	format = 	"csv"; 	break;
-							case "form" : 	format = 	"form"; break;
-							case "write" : 	writeMode =	true; 	break;
-							case "and" : 	logic = 	"and"; 	break;
-							case "or" : 	logic = 	"or"; 	break;
-							case "xor" : 	logic = 	"xor"; 	break;
+							// document type
+							case "json" : 		format = 		"json";	break;
+							case "csv" : 		format = 		"csv"; 	break;
+							case "form" : 		format = 		"form";	break;
+							
+							// read-only (read) or write-read (write)
+							case "write" : 		writeMode =		true; 	break;
+							case "read" : 		writeMode =		false; 	break;
+							
+							// logic
+							case "and" : 		logic = 		"and"; 	break;
+							case "or" : 		logic = 		"or"; 	break;
+							case "xor" : 		logic = 		"xor"; 	break;
+							
+							// are nulls allowed?
+							case "nulls" :		nullsAllowed = 	true; 	break;
+							case "nonulls" :	nullsAllowed = 	false; 	break;
 						}
 					}
 					
 					// Log query settings
-					System.out.println("["+sessionId+"] ClientHandler: format="+format+" writeMode="+writeMode+" logic="+logic);
+					System.out.println("["+sessionId+"] ClientHandler: format="+format+" writeMode="+writeMode+" logic="+logic+" nulls="+nullsAllowed);
 				} catch (Exception e) {
 					System.out.println("["+sessionId+"] ClientHandler: ERROR unable to read request from socket.");
 					System.out.println(e);
@@ -107,7 +118,7 @@ class ClientHandler extends Thread {
 				
 				try {
 					// Execute the query with any query data received
-					q.execute( req.data(), writeMode, logic );
+					q.execute( req.data(), writeMode, logic, nullsAllowed );
 					// Print database traversal log
 					System.out.print(q.logString());
 				} catch (Exception e) {
