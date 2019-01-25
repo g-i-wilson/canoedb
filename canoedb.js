@@ -369,6 +369,12 @@ class CanoeDB extends React.Component {
 										(
 											settings.hasOwnProperty(table) && settings[table].hasOwnProperty(column) ?
 											settings[table][column] : {}
+										),
+										( 	columns.hasOwnProperty(table) &&
+											columns[table].hasOwnProperty(column) && 
+											Object.keys(columns[table][column]).length==1 ?
+											{ value: Object.keys(columns[table][column])[0] }
+											: {}
 										)
 									);
 									// column Element

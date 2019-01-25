@@ -6,6 +6,7 @@ public class StringMap1D<T> {
 
 	Map<String, T> map = new LinkedHashMap<>();
 	Set<String> null_set = new LinkedHashSet<>();
+	String hashStr = "";
 
 	Map<String, T> map () {
 		return map;
@@ -13,6 +14,7 @@ public class StringMap1D<T> {
 	
 	T write (String a, T t) {
 		map.put(a, t);
+		hashStr = map.toString();
 		return map.get(a);
 	}
 	
@@ -118,7 +120,7 @@ public class StringMap1D<T> {
 	}
 	
 	public String hash () { // how this is implemented may change
-		return map.toString();
+		return hashStr;
 	}
 		
 }

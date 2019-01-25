@@ -42,6 +42,7 @@ public class Query {
 	int 		sessionId;
 	boolean 	write = false;
 	boolean		nullsAllowed = false;
+	boolean		zeroLengthFiltersEnabled = false;
 	String 		logic = "and";
 	
 	// Query timing and messages
@@ -64,6 +65,7 @@ public class Query {
 	// Add an output
 	public Query output (String table, String column) {
 		outputTemplate.vivify( table, column );
+		if (zeroLengthFiltersEnabled) inputTemplate.write( table, column, "" );
 		return this;
 	}
 	
@@ -145,11 +147,12 @@ public class Query {
 
 	
 	// Get the output String from this query
-	public void execute ( String data, boolean w, String l, boolean n ) {
+	public void execute ( String data, boolean w, String l, boolean n, boolean z ) {
 		// Query settings
 		write = w;
 		logic = l;
 		nullsAllowed = n;
+		zeroLengthFiltersEnabled = z;
 		// Query key-value pairs
 		log( "Query: parsing data..." );
 		parse( data );

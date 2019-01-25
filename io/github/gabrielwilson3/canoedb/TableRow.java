@@ -127,7 +127,8 @@ public class TableRow {
 			StringMap2D<String> inputMap = q.inputTemplate.cloned();
 			StringMap2D<String> outputMap = q.outputTemplate.cloned();
 			List<Table> tablesTraversed = new ArrayList<>();
-			if (readTraverseCont( inputMap, outputMap, tablesTraversed, q ))
+			if (readTraverseCont( inputMap, outputMap, tablesTraversed, q ) && (q.nullsAllowed || outputMap.noNulls()))
+				// add a row to the rowMap (eliminating rows containing nulls if not nullsAllowed)
 				q.rowMap.write( outputMap.hash(), outputMap.map );
 		}
 	}
@@ -201,13 +202,7 @@ public class TableRow {
 		}
 		
 		// ok, we're done with this TableRow...
-		if (q.nullsAllowed) {
-			// we're OK with some blanks being left as "null"
-			return true;
-		} else {
-			// otherwise, if all the blanks haven't been filled in by now, then we disqualify this row and fast-track back up the the tree as false.
-			return outputMap.noNulls();
-		}
+		return true;
 	}
 
 }

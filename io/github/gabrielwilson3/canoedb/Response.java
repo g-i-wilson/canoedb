@@ -610,7 +610,7 @@ public class Response {
 			"				}\r\n"+
 			"			});\r\n"+
 			"		});\r\n"+
-			"		var url = '/json'+\r\n"+
+			"		var url = '/json/zero'+\r\n"+
 			"			'/'+this.state.logic+\r\n"+
 			"			( writeMode ? '/write' : '' )+\r\n"+
 			"			( query.length>0 ? '?'+query.join('&') : '' );\r\n"+

@@ -82,7 +82,8 @@ class ClientHandler extends Thread {
 				String format = "spa";
 				boolean writeMode = false;
 				String logic = "and";
-				boolean nullsAllowed = true;
+				boolean nullsAllowed = false;
+				boolean zeroLengthFiltersEnabled = false;
 				
 				try {
 					// Configure the query using the requested path as settings
@@ -105,11 +106,21 @@ class ClientHandler extends Thread {
 							// are nulls allowed?
 							case "nulls" :		nullsAllowed = 	true; 	break;
 							case "nonulls" :	nullsAllowed = 	false; 	break;
+							
+							// are zero length ("") filters enabled (turns all "outputs" into "filters")?
+							case "zero" :		zeroLengthFiltersEnabled = 	true; 	break;
+							case "nonzero" :	zeroLengthFiltersEnabled = 	false; 	break;
 						}
 					}
 					
 					// Log query settings
-					System.out.println("["+sessionId+"] ClientHandler: format="+format+" writeMode="+writeMode+" logic="+logic+" nulls="+nullsAllowed);
+					System.out.println("["+sessionId+"] ClientHandler:"+
+						"format="+format+
+						" writeMode="+writeMode+
+						" logic="+logic+
+						" nulls="+nullsAllowed+
+						" zero length filters="+zeroLengthFiltersEnabled
+					);
 				} catch (Exception e) {
 					System.out.println("["+sessionId+"] ClientHandler: ERROR unable to read request from socket.");
 					System.out.println(e);
@@ -118,7 +129,7 @@ class ClientHandler extends Thread {
 				
 				try {
 					// Execute the query with any query data received
-					q.execute( req.data(), writeMode, logic, nullsAllowed );
+					q.execute( req.data(), writeMode, logic, nullsAllowed, zeroLengthFiltersEnabled );
 					// Print database traversal log
 					System.out.print(q.logString());
 				} catch (Exception e) {

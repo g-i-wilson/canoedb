@@ -7,25 +7,31 @@ import java.util.regex.Pattern;
 
 public class TableIndex {
 
-	// Table columns (for finding row by column data)
+	// Table objects
+	Table table;
+	
 	// column -> datafragment -> rowData -> TableRowObject (ignores duplicate rows)
 	StringMap3D<TableRow> index = new StringMap3D<>();
-	
+		
 	// null Collection
 	Collection<TableRow> null_collection = new ArrayList<>();
 
+	TableIndex (Table t) {
+		table = t;
+	}
 
 
 	TableIndex write (TableRow tr) {
 		for (String column : tr.columns()) {
+			// strings
 			String columnData = tr.read(column);
+			String rowHash = tr.hash();
 			// index the entire data string
-			indexData( column, columnData, tr.hash(), tr );
+			indexData( column, columnData, rowHash, tr );
 			// index each "word" in the data string
 			for (String word : columnData.split("\\W+")) {
-				if (!word.equals("")) indexData( column, word, tr.data.map.toString(), tr );
+				if (!word.equals("")) indexData( column, word, rowHash, tr );
 			}
-		
 		}
 		
 		// allow chaining
@@ -33,7 +39,11 @@ public class TableIndex {
 	}
 	
 	public Collection<TableRow> search (String col, String dataFragment) {
-		if (index.exists(col, dataFragment)) {
+		if (dataFragment.equals("")) {
+			// return all TableRows
+			return table.rowDataMap.values();
+		} else if (index.exists(col, dataFragment)) {
+			// return filtered TableRows (by column data)
 			return index.read(col, dataFragment).values();
 		} else {
 			// otherwise just return null

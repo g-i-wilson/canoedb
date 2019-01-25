@@ -26,7 +26,7 @@ public class Table {
 	File					tableFile;
 
 	// Table index
-	public TableIndex 		tableIndex = new TableIndex();
+	public TableIndex 		tableIndex = new TableIndex( this );
 	
 	// file exists
 	boolean					fileExists = false;
