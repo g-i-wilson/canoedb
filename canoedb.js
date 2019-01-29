@@ -3,6 +3,22 @@
 
 const e = React.createElement;
 
+// copied from answer to this question: https://stackoverflow.com/questions/2631001/test-for-existence-of-nested-javascript-object-key
+function checkNested(obj /*, level1, level2, ... levelN*/) {
+  var args = Array.prototype.slice.call(arguments, 1);
+
+  for (var i = 0; i < args.length; i++) {
+    if (!obj || !obj.hasOwnProperty(args[i])) {
+		console.log("checked "+args[i]);
+      return false;
+    }
+    obj = obj[args[i]];
+  }
+  return true;
+}
+
+
+
 class DataLists extends React.Component {
 	constructor(props) {
 		super(props);
@@ -144,6 +160,8 @@ class ColumnHeader extends React.Component {
 	}
 	
 	render() {
+		console.log("Rendering ColumnHeader "+this.state.autofill);
+		console.log(this.state);
 		const {enabled, table, column, options} = this.state;
 		if (this.state.reference) {
 			// hide columns that reference other tables
@@ -210,7 +228,9 @@ class CanoeDB extends React.Component {
 			structure: {},
 			columns: {},
 			rows: {},
-			logic: 'and'
+			logic: 'and',
+			willTransmit: false,
+			transmissionTimer: null
 		}
 		
 		this.update = this.update.bind(this);
@@ -367,16 +387,17 @@ class CanoeDB extends React.Component {
 										structure[table][column],
 										// any settings produced by the interface
 										(
-											settings.hasOwnProperty(table) && settings[table].hasOwnProperty(column) ?
-											settings[table][column] : {}
+											checkNested( settings, table, column ) ? settings[table][column] : {}
 										),
-										( 	columns.hasOwnProperty(table) &&
-											columns[table].hasOwnProperty(column) && 
-											Object.keys(columns[table][column]).length==1 ?
-											{ value: Object.keys(columns[table][column])[0] }
-											: {}
+										( 	checkNested( columns, table, column ) && Object.keys(columns[table][column]).length===1 ?
+											{ autofill: Object.keys(columns[table][column])[0] } : {}
+											//{autofill: Object.keys(columns[table][column])[0]} : {autfill: ''}
 										)
 									);
+									if (checkNested( columns, table, column )) {
+										console.log( "first: "+Object.keys(columns[table][column])[0] );
+										console.log( "length: "+Object.keys(columns[table][column]).length );
+									}
 									// column Element
 									return e( ColumnHeader, props_obj );
 								})

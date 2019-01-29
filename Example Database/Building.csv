@@ -1,0 +1,11 @@
+,Department,Work Space,Room Number
+,,,
+,,,
+sal_con,Sales,Conference Room,1
+cus_sev,Customer Service,Cube City,9-1-555
+eng_lab,Engineering,Lab,42
+eng_con,Engineering,Eng Conference Room,999
+eng_cub,Engineering,Cube City,-999
+man_off,Management,Offices,2
+
+8,,,
