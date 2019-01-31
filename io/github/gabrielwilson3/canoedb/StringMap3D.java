@@ -4,40 +4,59 @@ import java.util.*;
 
 public class StringMap3D<T> {
 
-	Map<String, Map<String, Map<String, T>>> map = new LinkedHashMap<>();
-	Set<String> null_set = new LinkedHashSet<>();
+	private Map<String, Map<String, Map<String, T>>> map = new LinkedHashMap<>();
+	private Set<String> null_set = new LinkedHashSet<>();
+	private String hashStr = "";
+	private boolean mapChanged = false;
 
-	Map<String, Map<String, Map<String, T>>> map () {
+	// access or change internal map object
+	public Map<String, Map<String, Map<String, T>>> map () {
 		return map;
 	}
+	public StringMap3D map ( Map<String, Map<String, Map<String, T>>> m ) {
+		map = m;
+		mapChanged = true;
+		return this;
+	}
 	
-	public void write (String a, String b, String c, T t) {
+	// write
+	public StringMap3D write (String a, String b, String c, T t) {
 		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, Map<String, T>>());
 		if (! map.get(a).containsKey(b)) map.get(a).put(b, new LinkedHashMap<String, T>());
 		map.get(a).get(b).put(c, t);
+		mapChanged = true;
+		return this;
 	}
-	
-	public void write (String a, Map<String, Map<String, T>> m) {
-		map.put(a, m);
-	}
-	
-	public void write (String a, String b, Map<String, T> m) {
+	public StringMap3D write (String a, String b, Map<String, T> m) {
 		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, Map<String, T>>());
 		map.get(a).put(b, m);
+		mapChanged = true;
+		return this;
+	}
+	public StringMap3D write (String a, Map<String, Map<String, T>> m) {
+		map.put(a, m);
+		mapChanged = true;
+		return this;
 	}
 	
 	// vivify
-	public void vivify (String a) {
+	public StringMap3D vivify (String a) {
 		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, Map<String, T>>());
+		mapChanged = true;
+		return this;
 	}
-	public void vivify (String a, String b) {
+	public StringMap3D vivify (String a, String b) {
 		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, Map<String, T>>());
 		if (! map.get(a).containsKey(b)) map.get(a).put(b, new LinkedHashMap<String, T>());
+		mapChanged = true;
+		return this;
 	}
-	public void vivify (String a, String b, String c) {
+	public StringMap3D vivify (String a, String b, String c) {
 		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, Map<String, T>>());
 		if (! map.get(a).containsKey(b)) map.get(a).put(b, new LinkedHashMap<String, T>());
 		map.get(a).get(b).put(c, null);
+		mapChanged = true;
+		return this;
 	}
 	
 	// element exists, but it might be null (all we know is the key is there)
@@ -129,12 +148,12 @@ public class StringMap3D<T> {
 	
 	public StringMap2D<T> referenced (String a) {
 		StringMap2D<T> ref = new StringMap2D<>();
-		ref.map = read(a);
+		ref.map( read(a) );
 		return ref;
 	}
 	public StringMap1D<T> referenced (String a, String b) {
 		StringMap1D<T> ref = new StringMap1D<>();
-		ref.map = read(a,b);
+		ref.map( read(a,b) );
 		return ref;
 	}
 
@@ -197,7 +216,13 @@ public class StringMap3D<T> {
 	}
 	
 	public String hash () { // how this is implemented may change
-		return map.toString();
+		if (mapChanged) {
+			hashStr = map.toString();
+			mapChanged = false;
+			return hashStr;
+		} else {
+			return hashStr;
+		}
 	}
 		
 }

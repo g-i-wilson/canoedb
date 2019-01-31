@@ -86,13 +86,13 @@ public class Query {
 	// Filtered set of TableRows from a Table (specifiy filter)
 	public Collection<TableRow> rows ( Table t, String column, String filter ) {
 		if (transformMap.defined( t.name, column )) {
-			log("Query: using QUERY Transform '"+transformNames.read( t.name, column )+"' with filter '"+filter+"', to find TableRows in "+t.name);
+			log("Query: using QUERY Transform '"+transformNames.read( t.name, column )+"' with filter '"+filter+"' applied to column '"+t.name+"."+column+"'");
 			return transformMap.read( t.name, column ).tableRows( t, column, filter );
 		} else if (t.transformMap.defined(column)) {
-			log("Query: using TABLE Transform '"+transformNames.read( t.name, column )+"' with filter '"+filter+"', to find TableRows in "+t.name);
+			log("Query: using TABLE Transform '"+transformNames.read( t.name, column )+"' with filter '"+filter+"' applied to column '"+t.name+"."+column+"'");
 			return t.transformMap.read( column ).tableRows( t, column, filter );
 		} else {
-			log("Query: using NULL Transform '"+t.transformNames.read( column )+"' with filter '"+filter+"', to find TableRows in "+t.name);
+			log("Query: using pass-thru Transform with filter '"+filter+"' applied to column '"+t.name+"."+column+"'");
 			return t.null_transform.tableRows( t, column, filter );
 		}
 	}
@@ -102,7 +102,7 @@ public class Query {
 		if (filter!=null) {
 			return rows( t, column, filter );
 		} else {
-			log("Query: null set of TableRows from table "+t.name);
+			log("Query: NULL found in q.inputTemplate for '"+t.name+"."+column+"', so returning an empty set of rows");
 			return t.null_collection;
 		}
 	}

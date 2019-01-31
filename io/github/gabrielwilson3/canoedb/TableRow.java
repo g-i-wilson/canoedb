@@ -25,8 +25,7 @@ public class TableRow {
 	// toString
 	@Override
 	public String toString () {
-		return "[TableRow: "+table.name+":"+id+"]";
-		//return "";
+		return table.name+":"+id;
 	}
 	
 	// "hash" string unique to this TableRow (how this is implemented may change)
@@ -115,7 +114,7 @@ public class TableRow {
 		if (from.size() > 0) {
 			// start traversing uphill toward an unknown number of peaks
 			for (TableRow tr : from) {
-				q.log( "TableRow: / UPHILL: "+table.name+":"+id+" -> "+tr.table.name+":"+tr.id );
+				q.log( "TableRow: / UPHILL: '"+table.name+":"+id+"' -> '"+tr.table.name+":"+tr.id+"'" );
 				tr.readTraverse( q );
 			}
 		} else {
@@ -129,7 +128,7 @@ public class TableRow {
 			List<Table> tablesTraversed = new ArrayList<>();
 			if (readTraverseCont( inputMap, outputMap, tablesTraversed, q ) && (q.nullsAllowed || outputMap.noNulls()))
 				// add a row to the rowMap (eliminating rows containing nulls if not nullsAllowed)
-				q.rowMap.write( outputMap.hash(), outputMap.map );
+				q.rowMap.write( outputMap.hash(), outputMap.map() );
 		}
 	}
 	
@@ -150,30 +149,35 @@ public class TableRow {
 		for (String column : inputMap.keys(tableName)) {
 			String filter = inputMap.read(tableName, column);
 			if ( data.defined(column) ) { // filter is null if it's already been used
-				q.log( "TableRow: filter defined: "+tableName+"."+column );
+				q.log( "TableRow: filter defined for '"+tableName+"."+column+"'" );
 				Collection<TableRow> c = q.rows( table, column, filter );
 				// AND logic (must pass all filters)
 				if (q.logic.equals("and")) {
-					if ( c==null || c.contains(this) ) {  // if null, then the Transform object has decided this filter is N/A
-					// if ( c.contains(this) ) {
-						q.log( "TableRow: filter PASSED (AND): "+filter );
+					if ( c==null ) {  // if null, then the Transform object has decided this filter is N/A
+						q.log( "TableRow: filter '"+filter+"' NOT APPLICABLE (AND logic - PASS assumed and included by default)" );
+						inputMap.write(tableName, column, null);
+					} else if ( c.contains(this) ) {
+						q.log( "TableRow: filter '"+filter+"' PASSED (AND logic)" );
 						inputMap.write(tableName, column, null);
 					} else {
-						q.log( "TableRow: filter FAILED (AND): "+filter );
+						q.log( "TableRow: filter '"+filter+"' FAILED (AND logic)" );
 						return false;
 					}
 				// XOR logic (must fail all filters)
 				} else if (q.logic.equals("xor")) {
-					if ( c!=null && c.contains(this) ) {  // if null, then the Transform object has decided this filter is N/A
-					// if ( c.contains(this) ) {
-						q.log( "TableRow: filter PASSED (bad) (XOR): "+filter );
+					if ( c==null ) {  // if null, then the Transform object has decided this filter is N/A
+						q.log( "TableRow: filter '"+filter+"' NOT APPLICABLE (XOR logic - FAIL assumed and included by default)" );
+					} else if ( c.contains(this) ) {
+						q.log( "TableRow: filter '"+filter+"' PASSED (bad - excluded) (XOR logic)" );
 						inputMap.write(tableName, column, null);
 						return false;
 					} else {
-						q.log( "TableRow: filter FAILED (good) (XOR): "+filter );
+						q.log( "TableRow: filter '"+filter+"' FAILED (good - included) (XOR logic)" );
 					}
-				}
 				// OR logic (all filters ignored)
+				} else {
+					q.log( "TableRow: filter '"+filter+"' IGNORED (everything included - OR logic)" );
+				}
 			}
 			
 			// are we done yet?
@@ -195,7 +199,7 @@ public class TableRow {
 		for (TableRow tr : to) {
 			// Make sure the row hasn't already been traversed (no endless loops allowed):
 			if (tr.table==null || !tablesTraversed.contains(tr.table)) {
-				q.log( "TableRow: \\ DOWNHILL: "+tableName+":"+id+" -> "+tr.table.name+":"+tr.id );
+				q.log( "TableRow: \\ DOWNHILL: '"+tableName+":"+id+"' -> '"+tr.table.name+":"+tr.id+"'" );
 				// Call the referenced tableRow (fast-tracking any false return);
 				if (! tr.readTraverseCont( inputMap, outputMap, tablesTraversed, q ) ) return false;
 			}

@@ -22,7 +22,6 @@ public class TimeStamp extends Transform {
 	@Override
 	public Collection<TableRow> tableRows (Table t, String column, String searchString) {
 		if (searchString.toLowerCase().equals("auto")) {
-			System.out.println("*************************** TimeStamp: 'auto' returns null");
 			return null; // make this filter N/A
 		} else {
 			return t.tableIndex.search( column, searchString );

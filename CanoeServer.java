@@ -115,11 +115,11 @@ class ClientHandler extends Thread {
 					
 					// Log query settings
 					System.out.println("["+sessionId+"] ClientHandler:"+
-						"format="+format+
-						" writeMode="+writeMode+
-						" logic="+logic+
-						" nulls="+nullsAllowed+
-						" zero length filters="+zeroLengthFiltersEnabled
+						" format:"+format+
+						", writeMode:"+writeMode+
+						", logic:"+logic+
+						", nulls:"+nullsAllowed+
+						", zero-length-filters:"+zeroLengthFiltersEnabled
 					);
 				} catch (Exception e) {
 					System.out.println("["+sessionId+"] ClientHandler: ERROR unable to read request from socket.");

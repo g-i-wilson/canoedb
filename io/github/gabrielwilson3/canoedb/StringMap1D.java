@@ -4,46 +4,54 @@ import java.util.*;
 
 public class StringMap1D<T> {
 
-	Map<String, T> map = new LinkedHashMap<>();
-	Set<String> null_set = new LinkedHashSet<>();
-	String hashStr = "";
+	private Map<String, T> map = new LinkedHashMap<>();
+	private Set<String> null_set = new LinkedHashSet<>();
+	private String hashStr = "";
+	private boolean mapChanged = false;
 
-	Map<String, T> map () {
+	// access or change internal map object
+	public Map<String, T> map () {
 		return map;
 	}
+	public StringMap1D map ( Map<String, T> m ) {
+		map = m;
+		mapChanged = true;
+		return this;
+	}
 	
-	T write (String a, T t) {
+	// write
+	public T write (String a, T t) {
 		map.put(a, t);
-		hashStr = map.toString();
-		return map.get(a);
+		mapChanged = true;
+		return t;
 	}
 	
 	// element exists, but it might be null (all we know is the key is there)
-	boolean exists (String a) {
+	public boolean exists (String a) {
 		return map.containsKey(a);
 	}
 	
 	// element exists + contains something (it's not null)
-	boolean defined (String a) {
+	public boolean defined (String a) {
 		return ( map.containsKey(a) && map.get(a)!=null );
 	}
 	
 	// returns a reference to the object
-	T read (String a) {
+	public T read (String a) {
 		if( map.containsKey(a) )
 			return map.get(a);
 		return null;
 	}
 	
-	Set<String> keys () {
+	public Set<String> keys () {
 		return map.keySet();
 	}
 	
-	Collection<T> values () {
+	public Collection<T> values () {
 		return map.values();
 	}
 		
-	StringMap1D<T> cloned () {
+	public StringMap1D<T> cloned () {
 		StringMap1D<T> cloned = new StringMap1D<>();
 		for ( String a : this.keys() ) {
 			cloned.write( a, this.read(a) );
@@ -51,14 +59,14 @@ public class StringMap1D<T> {
 		return cloned;
 	}
 	
-	boolean allNulls () {
+	public boolean allNulls () {
 		for ( String a : this.keys() ) {
 			if (map.get(a) != null) return false;
 		}
 		return true;
 	}
 	
-	boolean noNulls () {
+	public boolean noNulls () {
 		for ( String a : this.keys() ) {
 			if (map.get(a) == null) return false;
 		}
@@ -66,21 +74,21 @@ public class StringMap1D<T> {
 	}
 	
 	// loop through THIS and overwrite THIS with M (non-null)
-	StringMap1D<T> update ( StringMap1D<T> m ) {
+	public StringMap1D<T> update ( StringMap1D<T> m ) {
 		for ( String a : this.keys() )
 			if (m.defined(a)) write(a, m.read(a));
 		return this;
 	}
 	
 	// loop through M and overwrite THIS with M (non-null)
-	StringMap1D<T> merge ( StringMap1D<T> m ) {
+	public StringMap1D<T> merge ( StringMap1D<T> m ) {
 		for ( String a : m.keys() )
 			if (m.defined(a)) write(a, m.read(a));
 		return this;
 	}
 	
 	// export a template object of this map (pre-initialize values)
-	StringMap1D<T> templated (T b) {
+	public StringMap1D<T> templated (T b) {
 		StringMap1D<T> m = new StringMap1D<>();
 		for ( String a : keys() )
 			m.write(a, b);
@@ -88,7 +96,7 @@ public class StringMap1D<T> {
 	}
 	
 	// join map values into a delimited string
-	String join ( String delim ) {
+	public String join ( String delim ) {
 		String delim_str = "";
 		String output_str = "";
 		for ( String a : keys() ) {
@@ -103,7 +111,7 @@ public class StringMap1D<T> {
 		return toJSON(); 
 	}
 	
-	String toJSON() {
+	public String toJSON() {
 		String output = "{";
 		String a_comma = "\n";
 		for ( String a : keys() ) {
@@ -120,7 +128,13 @@ public class StringMap1D<T> {
 	}
 	
 	public String hash () { // how this is implemented may change
-		return hashStr;
+		if (mapChanged) {
+			hashStr = map.toString();
+			mapChanged = false;
+			return hashStr;
+		} else {
+			return hashStr;
+		}
 	}
 		
 }

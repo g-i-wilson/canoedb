@@ -88,9 +88,9 @@ public class Table {
 						Object anObject = aClass.newInstance();
 						Transform transformObject = (Transform) anObject;
 						transformMap.write( column, transformObject );
-						System.out.println("Table: loaded Transform object "+binName);
+						System.out.println("Table: loaded Transform object '"+binName+"'");
 					} catch (Exception e) {
-						System.out.println("Table: ERROR: unable to load Transform object "+binName);
+						System.out.println("Table: ERROR: unable to load Transform object '"+binName+"'");
 						e.printStackTrace();
 					}
 				}
@@ -130,7 +130,7 @@ public class Table {
 	TableRow row () {
 		// spawn a new row
 		TableRow tr = new TableRow(this, nextRowId(), columnNames.cloned());
-		System.out.println( "Table "+name+": added row "+tr.id+" (auto-ID)" );
+		System.out.println( "Table '"+name+"': added row '"+tr.id+"' (auto-ID)" );
 		return tr;
 	}
 
@@ -142,7 +142,7 @@ public class Table {
 		} else {
 			// spawn a new row (virtual; not yet appended)
 			TableRow tr = new TableRow(this, id, columnNames.cloned());
-			System.out.println( "Table "+name+": added row "+tr.id );
+			System.out.println( "Table '"+name+"': added row '"+tr.id+"'" );
 			logTableRow( tr );
 			return tr;
 		}
@@ -170,7 +170,7 @@ public class Table {
 		transformMap = q.transformMap.cloned(name);
 		for (String tableName : q.inputTemplate.keys()) {
 			if (tableName.equals(name)) continue; // skip this table
-			String newColumn = tableName+"_table_reference"; // create a reference to all the others
+			String newColumn = tableName+" (reference column)"; // create a reference to all the others
 			columnNames.write( newColumn, "" );
 			referenceNames.write( newColumn, tableName );
 		}
@@ -188,9 +188,9 @@ public class Table {
 		try {
 			Files.write(tableFile.toPath(), str.getBytes());
 			fileExists = true;
-			System.out.println( "Table "+name+": written to file "+tableFile );
+			System.out.println( "Table '"+name+"': written to file '"+tableFile+"'" );
 		} catch (Exception e) {
-			System.out.println("Table: ERROR writing to file "+tableFile);
+			System.out.println("Table: ERROR writing to file '"+tableFile+"'");
 			System.out.println(e);
 			e.printStackTrace();
 			return false;
@@ -209,9 +209,9 @@ public class Table {
 			logTableRow( tr );
 			// record in the index
 			tableIndex.write( tr );
-			System.out.println( "Table "+name+": appended row "+tr.id );
+			System.out.println( "Table '"+name+"': appended row '"+tr.id+"'" );
 		} catch (Exception e) {
-			System.out.println("Table: ERROR appending to file "+tableFile);
+			System.out.println("Table: ERROR appending to file '"+tableFile+"'");
 			System.out.println(e);
 			e.printStackTrace();
 			return false;
@@ -268,7 +268,7 @@ public class Table {
 		} else {
 			// continue trekking uphill
 			for (Table t : fromList) {
-				q.log( "Table: / UPHILL: "+name+" -> "+t.name );
+				q.log( "Table: / UPHILL: '"+name+"' -> '"+t.name+"'" );
 				t.writeTraverse( q );
 			}
 		}
@@ -291,15 +291,15 @@ public class Table {
 			q.log( "Table "+name+":"+tr.id+": column "+column );
 			if (q.inputTemplate.defined(name, column)) {
 				tr.write( column, q.inputTemplate.read(name, column), q.transformMap.read(name, column) );
-				q.log("Table "+name+": updated "+column+" of "+tr+" with "+q.inputTemplate.read(name, column));
+				q.log("Table "+name+": updated '"+column+"' of '"+tr+"' with '"+q.inputTemplate.read(name, column)+"'");
 			} else if (toMap.defined(column)) {
 				Table t = toMap.read(column);
-				q.log( "Table: \\ DOWNHILL: "+name+" -> "+t.name );
+				q.log( "Table: \\ DOWNHILL: '"+name+"' -> '"+t.name+"'" );
 				TableRow other_tr = t.writeTraverseCont(tablesTraversed, q);
 				if (other_tr!=null) {
 					tr.write( column, other_tr.id );
 					tr.linkTo( other_tr );
-					q.log("Table "+name+": added TableRow reference in "+tr+" under "+column+" to "+other_tr);
+					q.log("Table "+name+": added TableRow reference in '"+tr+"' under '"+column+"' to '"+other_tr+"'");
 					// just link to; doesn't affect the other_tr TableRow yet...
 				}
 			}
@@ -315,7 +315,7 @@ public class Table {
 		String hash = tr.hash();
 		if (rowDataMap.defined(hash)) {
 			TableRow tr_old = rowDataMap.read(hash);
-			q.log("Table "+name+": similar TableRow already exists; using row "+tr_old);
+			q.log("Table "+name+": similar TableRow already exists; using row '"+tr_old+"'");
 			// copy the links from the new TableRow over to the old TableRow
 			for ( TableRow linked_tr : tr.to ) {
 				tr_old.linkTo( linked_tr );
@@ -443,7 +443,7 @@ public class Table {
 		//Getting the runtime reference from system
 		Runtime runtime = Runtime.getRuntime();
 		
-		System.out.println("Table: heap utilization after loading "+name);
+		System.out.println("Table: heap utilization after loading table '"+name+"'");
 		
 		//Print used memory
 		System.out.println("Table: memory used: "+( (runtime.totalMemory() - runtime.freeMemory()) / mb )+"MB");

@@ -82,65 +82,106 @@ public class Response {
 		System.out.println("["+sessionId+"] Responce: generating form HTML...");
 		// start HTML and start the form table
 		String html = 
-			"<html>\n<head>\n<title>CanoeDB</title>\n<style>\n"+
-			"body { font-family:sans-serif; }"+
-			"div { width:100%; overflow-x:auto; overflow-y:hidden; }\n"+
-			"table { border-collapse:collapse; table-layout:fixed; }\n"+
-			"th, td { padding:10px; text-align:left; }\n"+
-			"</style></head>\n<body>\n<div>\n<form id=\"main_form\" method=\"post\">\n<table>\n<tr>\n";
+			"<html>\n"+
+			"	<head>\n"+
+			"		<title>CanoeDB</title>\n"+
+			"		<style>\n"+
+			"			body { font-family:sans-serif; font-size:12px; }\n"+
+			"			div { overflow-x:auto; overflow-y:auto; }\n"+
+			"			input { border:0; border-bottom:solid #eeeeee 1px; font-size:12px; font-weight:bold; }\n"+
+			"			.formDiv { top:0px; right:0px; left:0px; padding:10px 10px 10px 10px; }\n"+
+			"			.dataDiv { right:0px; left:0px; border-top:solid black 1px; }\n"+
+			"			.tableDiv { width:auto; display:inline-block; vertical-align:top; margin:3px 3px 20px 3px; padding:3px 3px 3px 3px; border-top:solid black 1px }\n"+
+			"			.tableTitle { font-weight:bold; padding:2px; }\n"+
+			"			.columnTitle { width:auto; display:inline-block; vertical-align: middle; padding:2px;  }\n"+
+			"			.columnInput { width:auto; display:inline-block; vertical-align: middle; padding:2px;  }\n"+
+			"			th, td { padding:8px; text-align:left; border: 1px solid #dddddd; }\n"+
+			"			table { border-collapse:collapse; left:0px; right:0px; top:0px; font-size:12px; }\n"+
+			"		</style>\n"+
+			"	</head>\n"+
+			"	<body>\n"+
+			"		<div class=\"formDiv\">\n"+
+			"			<form action=\"/form\" id=\"main_form\" method=\"post\">\n";
 		// loop through all the tables and columns
 		for (String table : q.db.tables()) {
 			Table t = q.db.table(table);
+			html += "			<div class=\"tableDiv\">\n"+
+					"				<div class=\"tableTitle\">"+table+"</div>\n";
 			for (String column : t.columns()) {
-				if (t.reference(column).equals("")) {
-					html +=
-						"<td>"+table+"<br>"+column+"<br>"+
-						"<input name=\""+table+"."+column+"\" list=\""+table+"."+column+"_list\" "+
-						"value=\""+(q.inputTemplate.read(table, column)!=null ? q.inputTemplate.read(table, column) : "")+"\" "+
-						"onchange=\"document.getElementById('main_form').submit()\" "+
-						"onblur=\"document.getElementById('main_form').submit()\" "+
-						"onfocus=\"this.value=''\" "+
-						"size=5>\n"+
-						"</td>\n<datalist id=\""+table+"."+column+"_list\">\n";
-					for (String data : q.colMap.keys(table, column)) {
-						html += "<option value=\""+data+"\">\n";
+				if (t.reference(column).equals("")) { // this is not a table reference column, i.e. ref is blank
+					// value pre-loaded into form element
+					String defaultValue = "";
+					if (q.inputTemplate.read(table, column)!=null) {
+						defaultValue = q.inputTemplate.read(table, column);
+					} else if (q.rowMap.keys().size()==1) {
+						q.log("Default value inserted into form for "+table+"."+column);
+						Object[] keyArray = q.rowMap.keys().toArray();
+						String firstRow = (String) keyArray[0];
+						defaultValue = q.rowMap.read(firstRow, table, column);
 					}
-					html += "</datalist>\n";
+					// form element
+					html +=
+						"				<div class=\"columnDiv\">\n"+
+						"					<div class=\"columnTitle\">"+column+":</div>\n"+
+						"					<div class=\"columnInput\">\n"+
+						"						<input \n"+
+						"							name=\""+table+"."+column+"\" \n"+
+						"							list=\""+table+"."+column+"_list\" \n"+
+						"							value=\""+defaultValue+"\" \n"+
+						"							onchange=\"document.getElementById('main_form').submit()\" \n"+
+						"							onblur=\"document.getElementById('main_form').submit()\" \n"+
+						"							onfocus=\"this.value=''\" \n"+
+						"						/>\n"+
+						"					</div>\n"+
+						"					<datalist id=\""+table+"."+column+"_list\">\n";
+					for (String data : q.colMap.keys(table, column)) {
+						html += 
+						"						<option value=\""+data+"\" />\n";
+					}
+					html +=
+						"					</datalist>\n"+
+						"				</div>\n";
 				}
 			}
+			html += 	"			</div>\n";
 		}
 		// complete the form table and start the output table
-		html += "</tr>\n</table>\n</form>\n</div>\n<br>\n<div>\n<table>\n<tr>";
+		html += 		"			</form>\n"+
+						"		</div>\n"+
+						"			<table>\n"+
+						"			<thead><tr>\n";
 		// table headers
 		for (String row : q.rowMap.keys()) {
 			for (String table : q.rowMap.keys(row)) {
 				Table t = q.db.table(table);
 				for (String column : q.rowMap.keys(row, table)) {
 					if (t.reference(column).equals("")) {
-						html += "<th>"+table+"<br>"+column+"</th>\n";
+						html += "				<th>"+column+"</th>\n";
 					}
 				}
 			}
 			break;
 		}
-		html += "</tr>\n";
+		html += "			</tr></thead><tbody>\n";
 		// table rows
 		for (String row : q.rowMap.keys()) {
-			html += "<tr>\n";
+			html += "			<tr>\n";
 			for (String table : q.rowMap.keys(row)) {
 				Table t = q.db.table(table);
 				for (String column : q.rowMap.keys(row, table)) {
 					if (t.reference(column).equals("")) {
 						String dataElement = q.rowMap.read(row, table, column);
-						html += "<td>"+dataElement+"</td>\n";
+						html += "				<td>"+dataElement+"</td>\n";
 						//html += "<td>"+( dataElement!=null ? dataElement : "" )+"</td>\n";
 					}
 				}
 			}
-			html += "</tr>\n";
+			html += "			</tr>\n";
 		}
 		// complete the output table and complete HTML
-		html += "</table>\n</div>\n</body>\n</html>\n";
+		html += 	"			</tbody><tfoot></tfoot></table>\n"+
+					"	</body>\n"+
+					"</html>\n";
 		System.out.println("["+sessionId+"] Responce: HTML complete");
 		
 		output( html, "text/html" );
