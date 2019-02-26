@@ -73,7 +73,7 @@ See also the list of [contributors](https://github.com/gabrielwilson3/canoedb/co
 
 # SPA Interface  
 
-![](CanoeDB_screenshot.png)
+![](readme_images/CanoeDB_screenshot.png)
 
 # HTTP API  
 *The Webserver layer*
