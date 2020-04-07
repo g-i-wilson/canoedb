@@ -1,8 +1,7 @@
 # CanoeDB  
-###### A simple NoSQL database on the front-end, and just a directory of CSV files on the back-end.
-
-## Introduction
-
+#### A simple relational NoSQL database on the front-end, and just a directory of CSV files on the back-end. 
+ 
+ 
 * **Relational:** CSV files become tables with relationships to other tables  
 * **Auto-dereferencing:** queries that span multiple tables are dereferenced automatically (and any tables in between)
 * **Simple Referencing:** left column is always the reference ID  
@@ -44,36 +43,9 @@
 * **High Survivability:** data is *appended* to CSV files (O_APPEND) and cannot be deleted.  Rather than deleting, *Transform* modifiers such as *Last* (See [API](#API)) can be used to return the latest data written.  The APPEND operation (POSIX) is by definition a safe and atomic file operation.  If redunancy and backups are desired, it's just matter of periodically copying CSV files in the database folder.
 * **High Performance:** The latency of a read-only query is simply the time necessary to traverse the hash-based memory structure. The latency of a write (read-write) query is the time required to complete a file APPEND operation (if an identical table-row doesn't already exist) on each table-file the query (directly or indirectly) touches, plus the follow-on read-only query.
 
-## Getting Started
-
-CanoeServer class provides an HTTP webserver and wrapper for the Database class in the canoedb package.  The Database class and canoedb package may also be used standalone.
-
-Start the server:
-```
-java CanoeServer /directory [port_number] [>logfile]
-```
-
-Access JSON API:
-```
-http://localhost:8080/json?table1.column1.Transform=filter_string
-```
-Access old-fashioned HTML form UI:
-```
-http://localhost:8080/form?table1.column1.Transform=filter_string
-```
-Where:
-- Transform is a class such as First, Last, TimeStamp, StoreBase64, TransmitBase64.
-
-## Authors
-
-* **Gabe Wilson** - *Initial work* - [gabrielwilson3](https://github.com/gabrielwilson3)
-
-See also the list of [contributors](https://github.com/gabrielwilson3/canoedb/contributors) who participated in this project.
-
-
 # SPA Interface  
-
-![](readme_images/CanoeDB_screenshot.png)
+ 
+![](CanoeDB_screenshot.png)
 
 # HTTP API  
 *The Webserver layer*
@@ -136,7 +108,7 @@ Transform objects extend the base *Transform* object, and are dynamically loaded
 `http://localhost:8080/json?table.column.Last=some+filter+text`
 #### Transforms Currently Supported:
 - Last
-  - The query element table1.column1.Last=something will allow only the last (latest) tale-row object to be returned from "table1".  This does not necessarily mean the combined set of data returned from the overall query is limited to one row.
+  - The query element table1.column1.Last=something will allow only the last (latest) tale-row object to be returned from "table1".  This does not necessarily mean the combined set of data returned from the overall query is limited to one row. 
 - First
   - Similar to First, but first (earliest) row is returned.
 - TimeStamp
@@ -145,16 +117,16 @@ Transform objects extend the base *Transform* object, and are dynamically loaded
   - Stores data as Base64 in the CSV file.  Data is sent both directions as plain (URI-encoded) UTF-8.
 - TransmitBase64
   - Data sent in both directions is encoded as Base64, but stored in the CSV file as plain UTF-8.
-
-
+	
+  
 # Architecture  
 
 
-
+  
 # Rationale for Reinvention of a Wheel:  
 - SQL syntax might be considered *declarative* for simple-use cases, but in traversing reference chains across the chasms between distantly related tables, SQL is painfully *imperative*.  
 - CanoeDB is the fusion of a declarative microservice API layer with a table-structure traversal algorithm.  
-
+  
 ## Tree-Structure vs. Related Tables:  
 - Tree-like data structures are wonderful (e.g. JSON), but they aren’t always a silver bullet when it comes to overly intertwined and tangled data.  
 - Example: the following describes a tree model with some departmental roles:  
@@ -162,7 +134,7 @@ Transform objects extend the base *Transform* object, and are dynamically loaded
 ```  
  Department         Employee        Role  
 
- Engineering ---+-> Manager ------> Drinks_coffee
+ Engineering ---+-> Manager ------> Drinks_coffee 
                 |  
                 +-> Engineer1 ----> Builds_stuff
                 |  
@@ -172,16 +144,16 @@ Transform objects extend the base *Transform* object, and are dynamically loaded
 - This looks great, until the VP tells you he wants to see the hierarchy by `Role -> Employee -> Department`
 Or worse, `Employee -> Department -> Role` Or both.  And he wants the Night Watchman added.
 
-```
+``` 
  Role                Employee           Department  
-
+ 
  Builds_stuff ---+-> Engineer1 -------> Engineering
-                 |
+                 | 
                  +-> Engineer2 -------> Engineering
-
-
+		 
+                                        
  Drinks_coffee --+-> Manager ---------> Engineering
-                 |
+                 | 
                  +-> Night_Watchman --> Engineering
 ```  
 
@@ -204,20 +176,14 @@ Or worse, `Employee -> Department -> Role` Or both.  And he wants the Night Watc
 - When you decompose a tree into tables with references, you’ll see there are end-node tables (e.g. Role & Department) and linking tables (e.g. Employee).  Technically, Employee could be an end-node table, a fourth table could link; but since the Employee table corresponds 1:1 with the linking table (in this case), we’ll just use the Employee table as the linking table.  
 - What we’ve effectively accomplished is that we’ve decompiled the tree structure down into its table description.  
 - We can now start at any one of the elemental tables and now build a tree-structure as we jump from table to table following references.  
-
+  
 ## How Do You Want to Store Data?  
 - In some cases you may want to store data pre-structured into a tree.  If you know beforehand how data will be structured, and if that structure will not change often, then a tree may be the ideal way to store data.   
 - If, on the other hand, you want maintain flexibility in how the data will ultimately be structured, or if you will often need to change that structure, then storing data in its elemental related tables may be instead ideal.  
 - Relational databases store data in elemental tables, while document databases (e.g. MongoDB) store data in tree-like (JSON/BSON) structures (i.e. documents).  It’s possible to add intertwining and merging (as opposed to branching) links between nodes in tree structures, and this is ideal in some situations, but the complexity of the tree-structure will significantly increase.  
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-* The CanoeServer multithreaded webserver is based on *Webserver.java* by [Matt Mahoney](https://cs.fit.edu/~mmahoney/cse3103/java/)  
-
-
+  
+  
+  
+  
 # Answers to Life's Questions:
 [everystudent.com](https://www.everystudent.com/)
