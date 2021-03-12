@@ -145,6 +145,10 @@ public class Query {
 		}
 	}
 
+	// Execute with defaults
+	public void execute () {
+		execute( "", write, logic, nullsAllowed, zeroLengthFiltersEnabled );
+	}
 	
 	// Get the output String from this query
 	public void execute ( String data, boolean w, String l, boolean n, boolean z ) {
