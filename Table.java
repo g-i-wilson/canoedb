@@ -5,7 +5,7 @@ import java.math.BigInteger;
 import java.nio.file.*;
 import java.io.File;
 import java.lang.*;
-import io.github.gabrielwilson3.canoedb.transforms.*;
+import canoedb.transforms.*;
 
 
 public class Table {
