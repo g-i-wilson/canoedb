@@ -193,7 +193,7 @@ public class Database {
 			return transformMap.read(tranName);
 		} else {
 			// Load a Transform object
-			String binName = "io.github.gabrielwilson3.canoedb.transforms."+tranName;
+			String binName = "canoedb.transforms."+tranName;
 			try {
 				Class aClass = classLoader.loadClass(binName);
 				Object anObject = aClass.newInstance();

@@ -1,4 +1,4 @@
-package io.github.gabrielwilson3.canoedb.transforms;
+package canoedb.transforms;
 
 import java.util.Base64;
 

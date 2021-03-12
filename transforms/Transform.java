@@ -1,7 +1,7 @@
-package io.github.gabrielwilson3.canoedb.transforms;
+package canoedb.transforms;
 
 import java.util.*;
-import io.github.gabrielwilson3.canoedb.*;
+import canoedb.*;
 
 public class Transform {
 
