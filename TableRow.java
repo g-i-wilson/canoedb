@@ -1,7 +1,7 @@
-package io.github.gabrielwilson3.canoedb;
+package canoedb;
 
 import java.util.*;
-import io.github.gabrielwilson3.canoedb.transforms.*;
+import canoedb.transforms.*;
 
 public class TableRow {
 	

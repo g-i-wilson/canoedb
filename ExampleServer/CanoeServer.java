@@ -1,3 +1,4 @@
+package canoedb;
 /*
 
 Based on Webserver.java -- Matt Mahoney, mmahoney@cs.fit.edu
@@ -19,8 +20,8 @@ import java.util.*;
 import java.io.*;
 import java.net.*;
 
-import io.github.gabrielwilson3.canoedb.*;
-import io.github.gabrielwilson3.canoedb.transforms.*;
+//import canoedb.*;
+import canoedb.transforms.*;
 
 
 public class CanoeServer {

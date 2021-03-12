@@ -1,9 +1,8 @@
+package canoedb;
 
 import java.util.*;
 import java.io.*;
 import java.net.*;
-
-import io.github.gabrielwilson3.canoedb.*;
 
 
 public class TestClass {
