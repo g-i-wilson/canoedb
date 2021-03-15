@@ -40,9 +40,9 @@ public class Query {
 
 	// Query properties
 	int 		sessionId;
-	boolean 	write = true;
-	boolean		nullsAllowed = false;
-	boolean		zeroLengthFiltersEnabled = false;
+	boolean 	write = false;
+	boolean		nullsAllowed = true;
+	boolean		zeroLengthFiltersEnabled = true;
 	String 		logic = "and";
 	
 	// Query timing and messages
@@ -81,6 +81,27 @@ public class Query {
 		transformNames.write( table, column, tranName );
 		transformMap.write( table, column, db.transform( tranName ) );
 		return this;
+	}
+	
+	// Get the database
+	public Database db () {
+		return db;
+	}
+	
+	// Get the structure of the Database
+	public StringMap3D<String> structure () {
+		return structMap;
+	}
+
+	// Get a StringMap3D with results sorted by rows
+	public StringMap3D<String> rows () {
+		return rowMap;
+	}
+	
+	// Get a StringMap3D with results sorted by columns
+	public StringMap3D<String> columns () {
+		mapToColumns();
+		return colMap;
 	}
 	
 	// Filtered set of TableRows from a Table (specifiy filter)
@@ -147,10 +168,25 @@ public class Query {
 
 	// Execute with defaults
 	public void execute () {
+		execute( "" );
+	}
+	
+	// Execute with write and others default
+	public void execute ( boolean write ) {
 		execute( "", write, logic, nullsAllowed, zeroLengthFiltersEnabled );
 	}
 	
-	// Get the output String from this query
+	// Execute with data and others default
+	public void execute ( String data ) {
+		execute( data, write, logic, nullsAllowed, zeroLengthFiltersEnabled );
+	}
+	
+	// Execute with data, write, and others default
+	public void execute ( String data, boolean write ) {
+		execute( data, write, logic, nullsAllowed, zeroLengthFiltersEnabled );
+	}
+	
+	// Execute Query with all config options
 	public void execute ( String data, boolean w, String l, boolean n, boolean z ) {
 		// Query settings
 		write = w;
@@ -214,7 +250,8 @@ public class Query {
 		intervalTime = currentTime;
 		logText += "["+sessionId+"] ["+usInterval+", "+usCurrent+"] "+s+"\n";
 	}
-	public String logString () {
+	
+	public String toString () {
 		return logText;
 	}
 	
