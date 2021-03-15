@@ -40,7 +40,7 @@ public class Query {
 
 	// Query properties
 	int 		sessionId;
-	boolean 	write = false;
+	boolean 	write = true;
 	boolean		nullsAllowed = false;
 	boolean		zeroLengthFiltersEnabled = false;
 	String 		logic = "and";
