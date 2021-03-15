@@ -5,6 +5,10 @@ import canoedb.*;
 
 public class Transform {
 
+	public Transform () {
+		System.out.println( this+": initialized!" );
+	}
+
 	// transform a data String on reading from a TableRow
 	public String onRead ( String s ) {
 		return s;

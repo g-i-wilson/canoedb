@@ -20,7 +20,7 @@ public class Table {
 	// Table rows
 	StringMap1D<TableRow> 	rowIdMap = new StringMap1D<>();
 	StringMap1D<TableRow> 	rowDataMap = new StringMap1D<>();
-	BigInteger 				highestRowId = new BigInteger("1");
+	BigInteger 				highestRowId = new BigInteger("0");
 	
 	// Table file
 	File					tableFile;
@@ -88,9 +88,9 @@ public class Table {
 						Object anObject = aClass.newInstance();
 						Transform transformObject = (Transform) anObject;
 						transformMap.write( column, transformObject );
-						System.out.println("canoedb.Table: loaded Transform object '"+binName+"'");
+						System.out.println(this+": loaded Transform object '"+binName+"'");
 					} catch (Exception e) {
-						System.out.println("canoedb.Table: ERROR: unable to load Transform object '"+binName+"'");
+						System.out.println(this+": ERROR: unable to load Transform object '"+binName+"'");
 						e.printStackTrace();
 					}
 				}
@@ -103,15 +103,15 @@ public class Table {
 				String[] 	rowData = removeFirst( data );
 				// spawn a TableRow
 				TableRow tr = new TableRow( this, rowId, twoArraysMap( columns, rowData ) );
-				//System.out.println("canoedb.Table: read row "+tr.data.toString());
+				//System.out.println(this+": read row "+tr.data.toString());
 				checkRowId( tr.id );
 				logTableRow( tr );
 				System.out.println(tr);
 			}
 			// Scanner suppresses io exceptions
-			if (sc.ioException() != null) System.out.println( "canoedb.Table: file io exception: "+sc.ioException() );
+			if (sc.ioException() != null) System.out.println( this+": file io exception: "+sc.ioException() );
 		} catch (Exception e) {
-			System.out.println( "canoedb.Table: file Scanner exception: "+e );
+			System.out.println( this+": file Scanner exception: "+e );
 			e.printStackTrace();
 			return false;
 		}
@@ -130,7 +130,7 @@ public class Table {
 	TableRow row () {
 		// spawn a new row
 		TableRow tr = new TableRow(this, nextRowId(), columnNames.cloned());
-		System.out.println( "canoedb.Table '"+name+"': added row '"+tr.id+"' (auto-ID)" );
+		System.out.println( this+" '"+name+"': added row '"+tr.id+"' (auto-ID)" );
 		return tr;
 	}
 
@@ -142,7 +142,7 @@ public class Table {
 		} else {
 			// spawn a new row (virtual; not yet appended)
 			TableRow tr = new TableRow(this, id, columnNames.cloned());
-			System.out.println( "canoedb.Table '"+name+"': added row '"+tr.id+"'" );
+			System.out.println( this+" '"+name+"': added row '"+tr.id+"'" );
 			logTableRow( tr );
 			return tr;
 		}
@@ -188,9 +188,9 @@ public class Table {
 		try {
 			Files.write(tableFile.toPath(), str.getBytes());
 			fileExists = true;
-			System.out.println( "canoedb.Table '"+name+"': written to file '"+tableFile+"'" );
+			System.out.println( this+" '"+name+"': written to file '"+tableFile+"'" );
 		} catch (Exception e) {
-			System.out.println("canoedb.Table: ERROR writing to file '"+tableFile+"'");
+			System.out.println(this+": ERROR writing to file '"+tableFile+"'");
 			System.out.println(e);
 			e.printStackTrace();
 			return false;
@@ -209,9 +209,9 @@ public class Table {
 			logTableRow( tr );
 			// record in the index
 			tableIndex.write( tr );
-			System.out.println( "canoedb.Table '"+name+"': appended row '"+tr.id+"'" );
+			System.out.println( this+" '"+name+"': appended row '"+tr.id+"'" );
 		} catch (Exception e) {
-			System.out.println("canoedb.Table: ERROR appending to file '"+tableFile+"'");
+			System.out.println(this+": ERROR appending to file '"+tableFile+"'");
 			System.out.println(e);
 			e.printStackTrace();
 			return false;
@@ -263,12 +263,12 @@ public class Table {
 			if (q.writeOrigins.contains(this)) return;
 			q.writeOrigins.add(this);
 			// create the peak table row and kick-off the downhill traversal
-			q.log( "canoedb.Table: * PEAK: "+name );
+			q.log( this+": * PEAK: "+name );
 			writeTraverseCont( tablesTraversed, q );
 		} else {
 			// continue trekking uphill
 			for (Table t : fromList) {
-				q.log( "canoedb.Table: / UPHILL: '"+name+"' -> '"+t.name+"'" );
+				q.log( this+": / UPHILL: '"+name+"' -> '"+t.name+"'" );
 				t.writeTraverse( q );
 			}
 		}
@@ -288,18 +288,18 @@ public class Table {
 		
 		// loop through the columns and fill in with data or reference strings
 		for ( String column : tr.data.keys() ) {
-			q.log( "canoedb.Table "+name+":"+tr.id+": column "+column );
+			q.log( this+" "+name+":"+tr.id+": column "+column );
 			if (q.inputTemplate.defined(name, column)) {
 				tr.write( column, q.inputTemplate.read(name, column), q.transformMap.read(name, column) );
-				q.log("canoedb.Table "+name+": updated '"+column+"' of '"+tr+"' with '"+q.inputTemplate.read(name, column)+"'");
+				q.log(this+" "+name+": updated '"+column+"' of '"+tr+"' with '"+q.inputTemplate.read(name, column)+"'");
 			} else if (toMap.defined(column)) {
 				Table t = toMap.read(column);
-				q.log( "canoedb.Table: \\ DOWNHILL: '"+name+"' -> '"+t.name+"'" );
+				q.log( this+": \\ DOWNHILL: '"+name+"' -> '"+t.name+"'" );
 				TableRow other_tr = t.writeTraverseCont(tablesTraversed, q);
 				if (other_tr!=null) {
 					tr.write( column, other_tr.id );
 					tr.linkTo( other_tr );
-					q.log("canoedb.Table "+name+": added TableRow reference in '"+tr+"' under '"+column+"' to '"+other_tr+"'");
+					q.log(this+" "+name+": added TableRow reference in '"+tr+"' under '"+column+"' to '"+other_tr+"'");
 					// just link to; doesn't affect the other_tr TableRow yet...
 				}
 			}
@@ -307,7 +307,7 @@ public class Table {
 		
 		// check to see if any data (or table references) have actually been added, and return null otherwise
 		if (tr.data.allNulls()) {
-			q.log("canoedb.Table "+name+": new TableRow has allNulls(), so returning null");
+			q.log(this+" "+name+": new TableRow has allNulls(), so returning null");
 			return null;
 		}
 		
@@ -315,7 +315,7 @@ public class Table {
 		String hash = tr.hash();
 		if (rowDataMap.defined(hash)) {
 			TableRow tr_old = rowDataMap.read(hash);
-			q.log("canoedb.Table "+name+": similar TableRow already exists; using row '"+tr_old+"'");
+			q.log(this+" "+name+": similar TableRow already exists; using row '"+tr_old+"'");
 			// copy the links from the new TableRow over to the old TableRow
 			for ( TableRow linked_tr : tr.to ) {
 				tr_old.linkTo( linked_tr );
@@ -443,19 +443,19 @@ public class Table {
 		//Getting the runtime reference from system
 		Runtime runtime = Runtime.getRuntime();
 		
-		System.out.println("canoedb.Table: heap utilization after loading table '"+name+"'");
+		System.out.println(this+": heap utilization after loading table '"+name+"'");
 		
 		//Print used memory
-		System.out.println("canoedb.Table: memory used: "+( (runtime.totalMemory() - runtime.freeMemory()) / mb )+"MB");
+		System.out.println(this+": memory used: "+( (runtime.totalMemory() - runtime.freeMemory()) / mb )+"MB");
 
 		//Print free memory
-		System.out.println("canoedb.Table: memory free: "+( runtime.freeMemory() / mb )+"MB");
+		System.out.println(this+": memory free: "+( runtime.freeMemory() / mb )+"MB");
 		
 		//Print total available memory
-		System.out.println("canoedb.Table: memory total: "+( runtime.totalMemory() / mb )+"MB");
+		System.out.println(this+": memory total: "+( runtime.totalMemory() / mb )+"MB");
 
 		//Print Maximum available memory
-		System.out.println("canoedb.Table: memory max: "+( runtime.maxMemory() / mb )+"MB");
+		System.out.println(this+": memory max: "+( runtime.maxMemory() / mb )+"MB");
 
 	}
 }

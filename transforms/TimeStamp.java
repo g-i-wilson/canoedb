@@ -6,10 +6,6 @@ import canoedb.*;
 
 public class TimeStamp extends Transform {
 	
-	public TimeStamp () {
-		System.out.println("TimeStamp: initialized!");
-	}
-
 	// auto
 	@Override
 	public String onWrite ( String s ) {
