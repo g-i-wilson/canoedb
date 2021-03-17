@@ -1,6 +1,6 @@
 # CanoeDB  
 #### A simple relational NoSQL database on the front-end, and just a directory of CSV files on the back-end. 
- 
+*Like a canoe, very light-weight; but with a little skill glides effortlessly across murky swamps of data.*
  
 * **Relational:** CSV files become tables with relationships to other tables  
 * **Auto-dereferencing:** queries that span multiple tables are dereferenced automatically (and any tables in between)
