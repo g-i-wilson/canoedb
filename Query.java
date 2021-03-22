@@ -41,14 +41,17 @@ public class Query {
 	// Query properties
 	int 		sessionId;
 	boolean 	write = false;
-	boolean		nullsAllowed = true;
-	boolean		zeroLengthFiltersEnabled = true;
+	boolean		nullsAllowed = false;
+	boolean		zeroLengthFiltersEnabled = false;
 	String 		logic = "and";
 	
 	// Query timing and messages
 	long		intervalTime;
 	long		startTime;
 	String		logText = "";
+	
+	// Query general
+	private boolean columnsMapped = false;
 	
 	
 	// Constructor
@@ -76,6 +79,16 @@ public class Query {
 		return this;
 	}
 	
+	// Read an input
+	public String input (String table, String column) {
+		return inputTemplate.read( table, column );
+	}
+	
+	// Read inputs
+	public StringMap2D<String> input () {
+		return inputTemplate;
+	}
+	
 	// Add a transform
 	public Query transform (String table, String column, String tranName) {
 		transformNames.write( table, column, tranName );
@@ -100,7 +113,7 @@ public class Query {
 	
 	// Get a StringMap3D with results sorted by columns
 	public StringMap3D<String> columns () {
-		mapToColumns();
+		if (! columnsMapped) mapToColumns();
 		return colMap;
 	}
 	
@@ -151,6 +164,7 @@ public class Query {
 				}
 			}
 		}
+		columnsMapped = true;
 	}
 	
 	// structure of the database
@@ -167,27 +181,27 @@ public class Query {
 	}
 
 	// Execute with defaults
-	public void execute () {
-		execute( "" );
+	public Query execute () {
+		return execute( "" );
 	}
 	
 	// Execute with write and others default
-	public void execute ( boolean write ) {
-		execute( "", write, logic, nullsAllowed, zeroLengthFiltersEnabled );
+	public Query execute ( boolean write ) {
+		return execute( "", write, logic, nullsAllowed, zeroLengthFiltersEnabled );
 	}
 	
 	// Execute with data and others default
-	public void execute ( String data ) {
-		execute( data, write, logic, nullsAllowed, zeroLengthFiltersEnabled );
+	public Query execute ( String data ) {
+		return execute( data, write, logic, nullsAllowed, zeroLengthFiltersEnabled );
 	}
 	
 	// Execute with data, write, and others default
-	public void execute ( String data, boolean write ) {
-		execute( data, write, logic, nullsAllowed, zeroLengthFiltersEnabled );
+	public Query execute ( String data, boolean write ) {
+		return execute( data, write, logic, nullsAllowed, zeroLengthFiltersEnabled );
 	}
 	
 	// Execute Query with all config options
-	public void execute ( String data, boolean w, String l, boolean n, boolean z ) {
+	public Query execute ( String data, boolean w, String l, boolean n, boolean z ) {
 		// Query settings
 		write = w;
 		logic = l;
@@ -207,6 +221,7 @@ public class Query {
 		mapToColumns();
 		// refresh the structure of the database
 		databaseStructure();
+		return this;
 	}
 	
 	// Parse the query string as CGI key=value&key=value tuples
