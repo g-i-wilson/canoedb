@@ -19,5 +19,15 @@ public class MaskCommas extends Transform {
 		return s.replace(',','|');
 	}
 
+	// set a limitation on indexing slices of data Strings
+	public int indexSliceLimit (int stringLength) {
+		return 0; // disabled
+	}
+
+	// split String for indexing words with String.split(___)
+	// indexing of words will be skipped if null
+	public String indexWordSplitter () {
+		return ",";
+	}
 	
 }

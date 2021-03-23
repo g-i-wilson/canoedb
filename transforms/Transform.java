@@ -24,6 +24,16 @@ public class Transform {
 		// utilizes the search() function of the tableIndex that finds TableRows based on whole data element or word-begins-with fragment
 		return t.tableIndex.search( column, searchString );
 	}
+	
+	// set a limitation on indexing slices of data Strings
+	public int indexSliceLimit (int stringLength) {
+		return stringLength;
+	}
 
+	// split String for indexing words with String.split(___)
+	// indexing of words will be skipped if null
+	public String indexWordSplitter () {
+		return "\\W+";
+	}
 	
 }

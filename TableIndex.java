@@ -29,8 +29,10 @@ public class TableIndex {
 			// index the entire data string
 			indexData( column, columnData, rowHash, tr );
 			// index each "word" in the data string
-			for (String word : columnData.split("\\W+")) {
-				if (!word.equals("")) indexData( column, word, rowHash, tr );
+			if (table.transform(column).indexWordSplitter() != null) {
+				for (String word : columnData.split( table.transform(column).indexWordSplitter() )) {
+					if (!word.equals("")) indexData( column, word, rowHash, tr );
+				}
 			}
 		}
 		
@@ -54,7 +56,7 @@ public class TableIndex {
 	
 	private void indexData( String col, String data, String hash, TableRow tr ) {
 		// index each begins-with slice of the data string
-		for (int i=0; i<data.length(); i++) {
+		for (int i=0; i<table.transform(col).indexSliceLimit(data.length()); i++) {
 			// slice
 			String begins_with = data.substring( 0, i+1 );
 			index.write( col, begins_with, hash, tr );
