@@ -38,10 +38,10 @@ public class Database {
 		if (f.exists()) {
 			Table t = new Table( f );
 			if (t.read()) {
-				System.out.println("Database: loaded table '"+t.name+"'");
+				System.out.println(this+": loaded table '"+t.name+"'");
 				tableMap.write( t.name, t );
-			} else System.out.println("Database: ERROR couldn't load table '"+t.name+"'");
-		} else System.out.println("Database: ERROR can't find file '"+f+"'");
+			} else System.out.println(this+": ERROR couldn't load table '"+t.name+"'");
+		} else System.out.println(this+": ERROR can't find file '"+f+"'");
 		return this;
 	}
 
@@ -57,19 +57,19 @@ public class Database {
 			databaseFolder = d;
 			for (File f : d.listFiles())
 				if (f.isDirectory() && !f.getName().equals("..") && !f.getName().equals(".")) {
-					System.out.println("Database: reading '"+f+"'");
+					System.out.println(this+": reading '"+f+"'");
 					folder( f );
 				} else
 					file( f );
 		} else {
-			System.out.println("Database: ERROR can't find directory '"+d+"'");
+			System.out.println(this+": ERROR can't find directory '"+d+"'");
 		}
 		return this;
 	}
 	
 	// link all the Table objects together by direct links
 	public Database linkTables () {
-		System.out.println("\nDatabase: Linking Tables...");
+		System.out.println(this+": Linking Tables...");
 		for (String tableName : tables()) {
 			StringMap1D<String> refMap = table(tableName).referenceNames;
 			Table t = table(tableName);
@@ -89,13 +89,13 @@ public class Database {
 		for (String tableName : tables()) {
 			table(tableName).downhill();
 		}
-		System.out.println("Database: Table linking complete.");
+		System.out.println(this+": Table linking complete.");
 		return this;
 	}
 	
 	// link all the TableRow objects together by direct links
 	public Database linkTableRows () {
-		System.out.println("\nDatabase: Linking TableRows...");
+		System.out.println(this+": Linking TableRows...");
 		for (String tableName : tables()) {
 			StringMap1D<String> refMap = table(tableName).referenceNames;
 			Table t = table(tableName);
@@ -118,7 +118,7 @@ public class Database {
 				}
 			}
 		}
-		System.out.println("Database: TableRow linking complete.");
+		System.out.println(this+": TableRow linking complete.");
 		return this;
 	}
 
@@ -130,7 +130,7 @@ public class Database {
 			File tableFile = new File( databaseFolder, tableName+".csv" );
 			Table t = new Table(tableFile); // won't create an actual file until the first TableRow is appended
 			tableMap.write( t.name, t );
-			System.out.println( "Database: auto-vivified table '"+t.name+"'");
+			System.out.println( this+": auto-vivified table '"+t.name+"'");
 			return t;
 		}
 	}
@@ -152,30 +152,30 @@ public class Database {
 	
 	// run a read or write-read query using a Query object
 	void execute ( Query q ) {
-		q.log("Database: executing query...");
+		q.log(this+": executing query...");
 		for (String tableName : q.inputTemplate.keys()) {
 			// get a reference to the Table
 			Table t = table( tableName );
 			// if this Table file doesn't exist yet, then use the inputTemplate map to configure the columns
 			if (!t.fileExists) {
-				q.log("Database: table file for '"+t.name+"' doesn't exist...");
+				q.log(this+": table file for '"+t.name+"' doesn't exist...");
 				t.initToDisk( q );
 				linkTables();
 			}
 			// WRITE (writes the string as-is)
 			if (q.write) {
-				q.log("Database: starting WRITE...");
-				q.log( "Database: WRITE traverse starting at Table '"+tableName+"'" );
+				q.log(this+": starting WRITE...");
+				q.log( this+": WRITE traverse starting at Table '"+tableName+"'" );
 				t.writeTraverse( q );
 			}
 			// READ (searches for the string as though it's a begins-with fragment)
-			q.log("Database: starting READ...");
+			q.log(this+": starting READ...");
 			for (String column : q.inputTemplate.keys( tableName )) {
-				q.log("Database: reading input column '"+column+"'...");
+				q.log(this+": reading input column '"+column+"'...");
 				Collection<TableRow> c = q.rows( t, column );
 				if (c==null) continue; // if null, then the Transform object has decided this filter is N/A
 				for ( TableRow tr : c ) {
-					q.log( "Database: READ traverse starting at TableRow '"+tr+"'" );
+					q.log( this+": READ traverse starting at TableRow '"+tr+"'" );
 					tr.readTraverse( q );
 				}
 			}
@@ -199,10 +199,10 @@ public class Database {
 				Object anObject = aClass.newInstance();
 				Transform transformObject = (Transform) anObject;
 				transformMap.write( tranName, transformObject );
-				System.out.println("Database: loaded Transform object '"+binName+"'");
+				System.out.println(this+": loaded Transform object '"+binName+"'");
 				return transformObject;
 			} catch (Exception e) {
-				System.out.println("Database: ERROR: unable to load Transform object '"+binName+"'");
+				System.out.println(this+": ERROR: unable to load Transform object '"+binName+"'");
 				e.printStackTrace();
 				transformMap.write( tranName, null_transform );
 				return null_transform;

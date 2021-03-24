@@ -65,7 +65,7 @@ public class Table {
 			fileName = fileName.substring(0, pos);
 		}
 		name = fileName;
-		System.out.println("\ncanoedb.Table: initialized "+name);
+		System.out.println(this+": initialized "+name);
 	}
 	
 	// Load table from a physical file
@@ -77,7 +77,7 @@ public class Table {
 			columnNames		= blankMap( columns );
 			referenceNames	= twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
 			transformNames = twoArraysMap( columns, removeFirst(decodeLine(sc.nextLine())) );
-			System.out.println(columnNames);
+			System.out.println(this+": "+columnNames);
 			fileExists = true;
 			// Load the Transform objects
 			for (String column : columnNames.keys()) {
@@ -106,7 +106,7 @@ public class Table {
 				//System.out.println(this+": read row "+tr.data.toString());
 				checkRowId( tr.id );
 				logTableRow( tr );
-				System.out.println(tr);
+				//System.out.println(tr);
 			}
 			// Scanner suppresses io exceptions
 			if (sc.ioException() != null) System.out.println( this+": file io exception: "+sc.ioException() );
@@ -241,7 +241,7 @@ public class Table {
 		// grab this Table's toSet, and use that in the recursive continueDownhill function
 		toSet.add( name ); // this table
 		continueDownhill( toSet );
-		System.out.println(name+": toSet: "+toSet);
+		System.out.println(this+": "+name+": toSet: "+toSet);
 	}
 	// SET DOWNHILL: continuation function for downhill function
 	void continueDownhill (Set<String> someSet) {
