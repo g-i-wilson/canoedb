@@ -19,5 +19,5 @@ public class Last extends Transform {
 		}
 		return last;
 	}
-	
+
 }

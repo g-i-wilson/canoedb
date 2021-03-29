@@ -9,10 +9,10 @@ public class TableIndex {
 
 	// Table objects
 	Table table;
-	
+
 	// column -> datafragment -> rowData -> TableRowObject (ignores duplicate rows)
 	StringMap3D<TableRow> index = new StringMap3D<>();
-		
+
 	// null Collection
 	Collection<TableRow> null_collection = new ArrayList<>();
 
@@ -35,11 +35,11 @@ public class TableIndex {
 				}
 			}
 		}
-		
+
 		// allow chaining
 		return this;
 	}
-	
+
 	public Collection<TableRow> search (String col, String dataFragment) {
 		if (dataFragment.equals("")) {
 			// return all TableRows
@@ -53,7 +53,7 @@ public class TableIndex {
 			return null_collection;
 		}
 	}
-	
+
 	private void indexData( String col, String data, String hash, TableRow tr ) {
 		// index each begins-with slice of the data string
 		for (int i=0; i<table.transform(col).indexSliceLimit(data.length()); i++) {
@@ -62,5 +62,5 @@ public class TableIndex {
 			index.write( col, begins_with, hash, tr );
 		}
 	}
-	
+
 }

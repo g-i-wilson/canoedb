@@ -6,7 +6,7 @@ import java.math.BigInteger;
 import canoedb.transforms.*;
 
 public class Query {
-	
+
 	// Database.execute(this) populates rowMap
 	// rowMap: row_str -> table -> column -> data
 	StringMap3D<String> rowMap = new StringMap3D<>();
@@ -14,7 +14,7 @@ public class Query {
 	StringMap3D<String> colMap = new StringMap3D<>();
 	// structMap: table -> column -> reference||transform -> table_name||transform_name
 	StringMap3D<String> structMap = new StringMap3D<>();
-		
+
 	// input
 	// table -> column -> data
 	StringMap2D<String> inputTemplate = new StringMap2D<>();
@@ -25,16 +25,16 @@ public class Query {
 	// table -> column -> transformObject
 	StringMap2D<String> transformNames = new StringMap2D<>();
 	StringMap2D<Transform> transformMap = new StringMap2D<>();
-	
+
 	// peak list (read)
 	List<TableRow> readOrigins = new ArrayList<>();
-	
+
 	// peak (or partial-summit) list (write)
 	List<Table> writeOrigins = new ArrayList<>();
-		
+
 	// database object
-	Database db;	
-	
+	Database db;
+
 	// output map (just a reference to either the rowMap or colMap)
 	StringMap3D<String> outputMap = rowMap;
 
@@ -44,16 +44,16 @@ public class Query {
 	boolean		nullsAllowed = false;
 	boolean		zeroLengthFiltersEnabled = false;
 	String 		logic = "and";
-	
+
 	// Query timing and messages
 	long		intervalTime;
 	long		startTime;
 	String		logText = "";
-	
+
 	// Query general
 	private boolean columnsMapped = false;
-	
-	
+
+
 	// Constructor
 	public Query (Database d, int id) {
 		// set Database object
@@ -64,43 +64,43 @@ public class Query {
 		startTime = System.nanoTime();
 		intervalTime = startTime;
 	}
-	
+
 	// Add an output
 	public Query output (String table, String column) {
 		outputTemplate.vivify( table, column );
 		if (zeroLengthFiltersEnabled) inputTemplate.write( table, column, "" );
 		return this;
 	}
-	
+
 	// Add an input
 	public Query input (String table, String column, String data) {
 		inputTemplate.write( table, column, data );
 		outputTemplate.vivify( table, column );
 		return this;
 	}
-	
+
 	// Read an input
 	public String input (String table, String column) {
 		return inputTemplate.read( table, column );
 	}
-	
+
 	// Read inputs
 	public StringMap2D<String> input () {
 		return inputTemplate;
 	}
-	
+
 	// Add a transform
 	public Query transform (String table, String column, String tranName) {
 		transformNames.write( table, column, tranName );
 		transformMap.write( table, column, db.transform( tranName ) );
 		return this;
 	}
-	
+
 	// Get the database
 	public Database db () {
 		return db;
 	}
-	
+
 	// Get the structure of the Database
 	public StringMap3D<String> structure () {
 		return structMap;
@@ -110,13 +110,13 @@ public class Query {
 	public StringMap3D<String> rows () {
 		return rowMap;
 	}
-	
+
 	// Get a StringMap3D with results sorted by columns
 	public StringMap3D<String> columns () {
 		if (! columnsMapped) mapToColumns();
 		return colMap;
 	}
-	
+
 	// Filtered set of TableRows from a Table (specifiy filter)
 	public Collection<TableRow> rows ( Table t, String column, String filter ) {
 		if (transformMap.defined( t.name, column )) {
@@ -140,7 +140,7 @@ public class Query {
 			return t.null_collection;
 		}
 	}
-	
+
 	// increment a numerical value held as a String
 	private String incrementNumericalString (String numberString) {
 		try {
@@ -166,7 +166,7 @@ public class Query {
 		}
 		columnsMapped = true;
 	}
-	
+
 	// structure of the database
 	void databaseStructure () {
 		for (String table : db.tables()) {
@@ -184,22 +184,22 @@ public class Query {
 	public Query execute () {
 		return execute( "" );
 	}
-	
+
 	// Execute with write and others default
 	public Query execute ( boolean write ) {
 		return execute( "", write, logic, nullsAllowed, zeroLengthFiltersEnabled );
 	}
-	
+
 	// Execute with data and others default
 	public Query execute ( String data ) {
 		return execute( data, write, logic, nullsAllowed, zeroLengthFiltersEnabled );
 	}
-	
+
 	// Execute with data, write, and others default
 	public Query execute ( String data, boolean write ) {
 		return execute( data, write, logic, nullsAllowed, zeroLengthFiltersEnabled );
 	}
-	
+
 	// Execute Query with all config options
 	public Query execute ( String data, boolean w, String l, boolean n, boolean z ) {
 		// Query settings
@@ -223,7 +223,7 @@ public class Query {
 		databaseStructure();
 		return this;
 	}
-	
+
 	// Parse the query string as CGI key=value&key=value tuples
 	public Query parse (String query) {
 		// loop through cgi data query and directly map input, output, and operation data
@@ -252,7 +252,7 @@ public class Query {
 			}
 		}
 		return this;
-	}	
+	}
 
 	// log message and time elapsed
 	public void log () {
@@ -263,11 +263,11 @@ public class Query {
 		long usCurrent = (currentTime - startTime)/1000;
 		long usInterval = (currentTime - intervalTime)/1000;
 		intervalTime = currentTime;
-		logText += "["+sessionId+"] ["+usInterval+", "+usCurrent+"] "+s+"\n";
+		logText += "["+sessionId+"] [total:"+usCurrent+"us, delta:"+usInterval+"us] "+s+"\n";
 	}
-	
+
 	public String toString () {
 		return logText;
 	}
-	
+
 }

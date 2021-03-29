@@ -4,14 +4,14 @@ import java.util.*;
 import canoedb.transforms.*;
 
 public class TableRow {
-	
+
 	StringMap1D<String> 	data = new StringMap1D<>(); // column -> data_string
 	StringMap1D<Transform>	transform = new StringMap1D<>();
 	List<TableRow>			to = new ArrayList<>(); // list of links to other TableRow objects
 	List<TableRow>			from = new ArrayList<>(); // list of links to other TableRow objects
 	String					id = ""; // the ID string from the Table
 	Table					table; // the Table object
-	
+
 	// initialize blank
 	TableRow () {}
 	// initialize with data
@@ -27,12 +27,12 @@ public class TableRow {
 	public String toString () {
 		return table.name+":"+id;
 	}
-	
+
 	// "hash" string unique to this TableRow (how this is implemented may change)
 	String hash () {
 		return data.hash();
 	}
-	
+
 	// data is deep-cloned into new objct (all others are just referenced to original object)
 	public TableRow cloned () {
 		TableRow tr = new TableRow( table, id, data.cloned() );
@@ -40,7 +40,7 @@ public class TableRow {
 		tr.from = from;
 		return tr;
 	}
-	
+
 	// link TO
 	boolean linkTo ( TableRow tr ) {
 		if (!to.contains(tr)) {
@@ -55,12 +55,12 @@ public class TableRow {
 			return true;
 		} else return false;
 	}
-	
+
 	// columns
 	Set<String> columns () {
 		return data.keys();
 	}
-	
+
 	// WRITE a StringMap1D
 	public TableRow write ( StringMap1D<String> map ) {
 		for (String column : map.keys()) {
@@ -101,14 +101,14 @@ public class TableRow {
 			return read(column);
 		}
 	}
-	
+
 	// merge data
 	TableRow merge ( StringMap1D<String> map ) {
 		data.merge( map );
 		return this;
 	}
-	
-	
+
+
 	// READ UPHILL traverse (recursive)
 	public void readTraverse ( Query q ) {
 		if (from.size() > 0) {
@@ -126,12 +126,15 @@ public class TableRow {
 			StringMap2D<String> inputMap = q.inputTemplate.cloned();
 			StringMap2D<String> outputMap = q.outputTemplate.cloned();
 			List<Table> tablesTraversed = new ArrayList<>();
-			if (readTraverseCont( inputMap, outputMap, tablesTraversed, q ) && (q.nullsAllowed || outputMap.noNulls()))
+			// q.log( "about to call readTraverseCont...");
+			if (readTraverseCont( inputMap, outputMap, tablesTraversed, q ) && (q.nullsAllowed || outputMap.noNulls())) {
 				// add a row to the rowMap (eliminating rows containing nulls if not nullsAllowed)
 				q.rowMap.write( outputMap.hash(), outputMap.map() );
+				// q.log("Added row to rowMap: "+q.rowMap);
+			}
 		}
 	}
-	
+
 	// READ DOWNHILL traverse (recursive)
 	private boolean readTraverseCont (
 		StringMap2D<String> inputMap, // transitions: populated -> null
@@ -141,10 +144,10 @@ public class TableRow {
 	) {
 		// name of this table
 		String tableName = table.name;
-		
+
 		// record a reference to this table
 		if (table!=null) tablesTraversed.add( table );
-		
+
 		// loop through input filters (if they exist)
 		for (String column : inputMap.keys(tableName)) {
 			String filter = inputMap.read(tableName, column);
@@ -179,11 +182,11 @@ public class TableRow {
 					q.log( "TableRow: filter '"+filter+"' IGNORED (everything included - OR logic)" );
 				}
 			}
-			
+
 			// are we done yet?
 			if ( outputMap.noNulls() && inputMap.allNulls() ) return true;
 		}
-		
+
 		// loop through the output blanks
 		for (String column : outputMap.keys(tableName)) {
 			// reference any data Strings found in outputMap
@@ -193,8 +196,8 @@ public class TableRow {
 			// are we done yet?
 			if ( outputMap.noNulls() && inputMap.allNulls() ) return true;
 		}
-			
-		
+
+
 		// traverse downhill through each "to" link
 		for (TableRow tr : to) {
 			// Make sure the row hasn't already been traversed (no endless loops allowed):
@@ -204,7 +207,7 @@ public class TableRow {
 				if (! tr.readTraverseCont( inputMap, outputMap, tablesTraversed, q ) ) return false;
 			}
 		}
-		
+
 		// ok, we're done with this TableRow...
 		return true;
 	}

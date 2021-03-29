@@ -9,43 +9,43 @@ import canoedb.transforms.*;
 
 
 public class Table {
-	
+
 	// Table properties
 	String 					name;
 	StringMap1D<String>		columnNames = new StringMap1D<>();
 	StringMap1D<String> 	referenceNames = new StringMap1D<>();
 	StringMap1D<String> 	transformNames = new StringMap1D<>();
 	StringMap1D<Transform> 	transformMap = new StringMap1D<>();
-	
+
 	// Table rows
 	StringMap1D<TableRow> 	rowIdMap = new StringMap1D<>();
 	StringMap1D<TableRow> 	rowDataMap = new StringMap1D<>();
 	BigInteger 				highestRowId = new BigInteger("0");
-	
+
 	// Table file
 	File					tableFile;
 
 	// Table index
 	public TableIndex 		tableIndex = new TableIndex( this );
-	
+
 	// file exists
 	boolean					fileExists = false;
-	
+
 	// downhill
 	StringMap1D<Table>		toMap = new StringMap1D<>(); // tableName -> table immediately downhill from this table
 	Set<String>				toSet = new HashSet<>(); // set of all tables reachable downhill from this table
 	// uphill
 	List<Table>				fromList = new ArrayList<>(); // table(s) immediately uphill from this table
-	
+
 	// null objects
 	StringMap1D<TableRow> 	null_map = new StringMap1D<>();
 	Set<String>				null_set = new LinkedHashSet<>();
 	Transform				null_transform = new Transform();
 	Collection<TableRow> 	null_collection = new ArrayList<>();
-	
+
 	// load onRead & onWrite classes
 	ClassLoader				classLoader = TableRow.class.getClassLoader();
-	
+
 
 
 	// set the physical path to the Table
@@ -67,7 +67,7 @@ public class Table {
 		name = fileName;
 		System.out.println(this+": initialized "+name);
 	}
-	
+
 	// Load table from a physical file
 	boolean read () {
 		// read CSV file
@@ -120,14 +120,21 @@ public class Table {
 		// able to read file
 		return true;
 	}
-	
-	// get a Set of all the TableRow objects in this Table
-	Set<String> rows () {
+
+	// get a Set of all ID Strings (corresponding to TableRow objects) in this Table
+	public Set<String> rows () {
 		return rowIdMap.keys();
 	}
-		
+
+	// get the last TableRow in the table
+	public TableRow last () {
+		return row(
+			(String) rows().toArray()[ rows().size()-1 ]
+		);
+	}
+
 	// Creates a new table row (virtual; not yet appended)
-	TableRow row () {
+	public TableRow row () {
 		// spawn a new row
 		TableRow tr = new TableRow(this, nextRowId(), columnNames.cloned());
 		System.out.println( this+" '"+name+"': added row '"+tr.id+"' (auto-ID)" );
@@ -135,7 +142,7 @@ public class Table {
 	}
 
 	// Get a TableRow by ID or create an empty TableRow for that ID
-	TableRow row ( String id ) {
+	public TableRow row ( String id ) {
 		if (rowIdMap.defined(id)) {
 			// access a real row
 			return rowIdMap.read(id);
@@ -147,9 +154,9 @@ public class Table {
 			return tr;
 		}
 	}
-	
-	// Get a TableRow by data 
-	TableRow row ( StringMap1D<String> data ) {
+
+	// Get a TableRow by data
+	public TableRow row ( StringMap1D<String> data ) {
 		if (rowDataMap.defined(data.toString())) {
 			return rowDataMap.read(data.toString());
 		} else {
@@ -161,7 +168,7 @@ public class Table {
 			return tr;
 		}
 	}
-	
+
 	// initialize Table to disk
 	boolean initToDisk ( Query q ) {
 		// update Table in memory based on the Query
@@ -197,9 +204,9 @@ public class Table {
 		}
 		return true;
 	}
-			
+
 	// append to the end of the Table file
-	boolean append (TableRow tr) {
+	public boolean append (TableRow tr) {
 		// append the TableRow to the Table file
 		String str = "\n"+tr.id+","+tr.data.join(",");
 		try {
@@ -218,12 +225,12 @@ public class Table {
 		}
 		return true;
 	}
-		
+
 	// columns in Table
 	public Set<String> columns () {
 		return columnNames.keys();
 	}
-	
+
 	// link TO Table
 	void linkTo ( String column, Table t ) {
 		toMap.write(column, t);
@@ -235,7 +242,7 @@ public class Table {
 			return true;
 		} else return false;
 	}
-	
+
 	// SET DOWNHILL (START): all tables reachable downhill from this table
 	void downhill () {
 		// grab this Table's toSet, and use that in the recursive continueDownhill function
@@ -273,7 +280,7 @@ public class Table {
 			}
 		}
 	}
-	
+
 	// WRITE DOWNHILL traverse (recursive)
 	private TableRow writeTraverseCont (
 		List<Table> tablesTraversed,
@@ -282,10 +289,10 @@ public class Table {
 		// no infinite table loops allowed
 		if (tablesTraversed.contains(this)) return null;
 		tablesTraversed.add(this);
-		
+
 		// create a blank TableRow object
 		TableRow tr = row();
-		
+
 		// loop through the columns and fill in with data or reference strings
 		for ( String column : tr.data.keys() ) {
 			q.log( this+" "+name+":"+tr.id+": column "+column );
@@ -304,13 +311,13 @@ public class Table {
 				}
 			}
 		}
-		
+
 		// check to see if any data (or table references) have actually been added, and return null otherwise
 		if (tr.data.allNulls()) {
 			q.log(this+" "+name+": new TableRow has allNulls(), so returning null");
 			return null;
 		}
-		
+
 		// verify that another similar TableRow doesn't already exist, and if so, use the old
 		String hash = tr.hash();
 		if (rowDataMap.defined(hash)) {
@@ -331,21 +338,21 @@ public class Table {
 			// add the new TableRow to the Table file
 			append( tr );
 		}
-		
+
 		// return the new (or old) TableRow
 		return tr;
 	}
 
 
 	// referenced Table
-	String reference (String column) {
+	public String reference (String column) {
 		if (referenceNames!=null && referenceNames.defined(column))
 			return referenceNames.read(column);
 		else return "";
 	}
-	
+
 	// tranform Class
-	Transform transform (String column) {
+	public Transform transform (String column) {
 		if (transformMap.defined(column)) {
 			return transformMap.read(column);
 		} else return null_transform;
@@ -371,7 +378,7 @@ public class Table {
 			return highestRowId.toString();
 		}
 	}
-	
+
 	// check the highestRowId
 	private void checkRowId( String id ) {
 		// check the id to see if highestRowId is equal or higher; replace otherwise
@@ -386,7 +393,7 @@ public class Table {
 		//System.out.println( id+", "+highestRowId.toString() );
 
 	}
-	
+
 	// map keys[] -> values[]
 	private StringMap1D<String> twoArraysMap (String[] keys, String[] values) {
 		StringMap1D<String> aMap = new StringMap1D<>();
@@ -399,7 +406,7 @@ public class Table {
 		}
 		return aMap;
 	}
-	
+
 	// Create a blank StringMap1D
 	private StringMap1D<String> blankMap (String[] keys) {
 		StringMap1D<String> aMap = new StringMap1D<>();
@@ -408,7 +415,7 @@ public class Table {
 		}
 		return aMap;
 	}
-	
+
 	// Remove first element from an array
 	private String[] removeFirst (String[] a) {
 		if (a.length > 1) {
@@ -417,7 +424,7 @@ public class Table {
 			return new String[]{};
 		}
 	}
-	
+
 	// encode (embedded commas)
 	private String[] encodeArray (String[] a) {
 		for (int i=0; i<a.length; i++) {
@@ -425,7 +432,7 @@ public class Table {
 		}
 		return a;
 	}
-	
+
 	// decode (embedded commas)
 	private String[] decodeLine (String line) {
 		String[] a = line.replace("\r","").replace("\n","").split(",");
@@ -434,23 +441,23 @@ public class Table {
 		}
 		return a;
 	}
-	
+
 	// table memory usage
 	void printMemoryUsage () {
-		
+
 		int mb = 1024*1024;
-		
+
 		//Getting the runtime reference from system
 		Runtime runtime = Runtime.getRuntime();
-		
+
 		System.out.println(this+": heap utilization after loading table '"+name+"'");
-		
+
 		//Print used memory
 		System.out.println(this+": memory used: "+( (runtime.totalMemory() - runtime.freeMemory()) / mb )+"MB");
 
 		//Print free memory
 		System.out.println(this+": memory free: "+( runtime.freeMemory() / mb )+"MB");
-		
+
 		//Print total available memory
 		System.out.println(this+": memory total: "+( runtime.totalMemory() / mb )+"MB");
 
