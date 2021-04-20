@@ -13,52 +13,52 @@ public class StringMap3D<T> {
 	public Map<String, Map<String, Map<String, T>>> map () {
 		return map;
 	}
-	public StringMap3D map ( Map<String, Map<String, Map<String, T>>> m ) {
+	public StringMap3D<T> map ( Map<String, Map<String, Map<String, T>>> m ) {
 		map = m;
 		mapChanged = true;
 		return this;
 	}
-	
+
 	// write
-	public StringMap3D write (String a, String b, String c, T t) {
+	public StringMap3D<T> write (String a, String b, String c, T t) {
 		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, Map<String, T>>());
 		if (! map.get(a).containsKey(b)) map.get(a).put(b, new LinkedHashMap<String, T>());
 		map.get(a).get(b).put(c, t);
 		mapChanged = true;
 		return this;
 	}
-	public StringMap3D write (String a, String b, Map<String, T> m) {
+	public StringMap3D<T> write (String a, String b, Map<String, T> m) {
 		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, Map<String, T>>());
 		map.get(a).put(b, m);
 		mapChanged = true;
 		return this;
 	}
-	public StringMap3D write (String a, Map<String, Map<String, T>> m) {
+	public StringMap3D<T> write (String a, Map<String, Map<String, T>> m) {
 		map.put(a, m);
 		mapChanged = true;
 		return this;
 	}
-	
+
 	// vivify
-	public StringMap3D vivify (String a) {
+	public StringMap3D<T> vivify (String a) {
 		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, Map<String, T>>());
 		mapChanged = true;
 		return this;
 	}
-	public StringMap3D vivify (String a, String b) {
+	public StringMap3D<T> vivify (String a, String b) {
 		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, Map<String, T>>());
 		if (! map.get(a).containsKey(b)) map.get(a).put(b, new LinkedHashMap<String, T>());
 		mapChanged = true;
 		return this;
 	}
-	public StringMap3D vivify (String a, String b, String c) {
+	public StringMap3D<T> vivify (String a, String b, String c) {
 		if (! map.containsKey(a)) map.put(a, new LinkedHashMap<String, Map<String, T>>());
 		if (! map.get(a).containsKey(b)) map.get(a).put(b, new LinkedHashMap<String, T>());
 		map.get(a).get(b).put(c, null);
 		mapChanged = true;
 		return this;
 	}
-	
+
 	// element exists, but it might be null (all we know is the key is there)
 	public boolean exists (String a) {
 		if( map.containsKey(a) )
@@ -82,7 +82,7 @@ public class StringMap3D<T> {
 			return true;
 		return false;
 	}
-	
+
 	// returns the reference to the object (or null)
 	public Map<String, Map<String, T>> read (String a) {
 		if( map.containsKey(a) )
@@ -99,22 +99,22 @@ public class StringMap3D<T> {
 			return map.get(a).get(b).get(c);
 		return null;
 	}
-	
+
 	public Set<String> keys () {
 		return map.keySet();
 	}
-	
+
 	public Set<String> keys(String a) {
 		if (! map.containsKey(a)) return null_set;
 		return map.get(a).keySet();
 	}
-	
+
 	public Set<String> keys(String a, String b) {
 		if (! map.containsKey(a)) return null_set;
 		if (! map.get(a).containsKey(b)) return null_set;
 		return map.get(a).get(b).keySet();
 	}
-	
+
 	public StringMap3D<T> cloned () {
 		StringMap3D<T> cloned = new StringMap3D<>();
 		for ( String a : this.keys() ) {
@@ -145,7 +145,7 @@ public class StringMap3D<T> {
 		}
 		return cloned;
 	}
-	
+
 	public StringMap2D<T> referenced (String a) {
 		StringMap2D<T> ref = new StringMap2D<>();
 		ref.map( read(a) );
@@ -157,7 +157,7 @@ public class StringMap3D<T> {
 		return ref;
 	}
 
-	
+
 	public boolean allNulls () {
 		for ( String a : this.keys() ) {
 			for ( String b : this.keys(a) ) {
@@ -168,7 +168,7 @@ public class StringMap3D<T> {
 		}
 		return true;
 	}
-	
+
 	public boolean noNulls () {
 		for ( String a : this.keys() ) {
 			for ( String b : this.keys(a) ) {
@@ -179,12 +179,12 @@ public class StringMap3D<T> {
 		}
 		return true;
 	}
-	
+
 	@Override
-	public String toString() { 
-		return toJSON(); 
+	public String toString() {
+		return toJSON();
 	}
-	
+
 	public String toJSON() {
 		String output = "{";
 		String a_comma = "\n";
@@ -214,7 +214,7 @@ public class StringMap3D<T> {
 		}
 		return output+"\n}";
 	}
-	
+
 	public String hash () { // how this is implemented may change
 		if (mapChanged) {
 			hashStr = map.toString();
@@ -224,5 +224,5 @@ public class StringMap3D<T> {
 			return hashStr;
 		}
 	}
-		
+
 }

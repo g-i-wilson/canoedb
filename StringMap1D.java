@@ -18,39 +18,39 @@ public class StringMap1D<T> {
 		mapChanged = true;
 		return this;
 	}
-	
+
 	// write
-	public T write (String a, T t) {
+	public StringMap1D<T> write (String a, T t) {
 		map.put(a, t);
 		mapChanged = true;
-		return t;
+		return this;
 	}
-	
+
 	// element exists, but it might be null (all we know is the key is there)
 	public boolean exists (String a) {
 		return map.containsKey(a);
 	}
-	
+
 	// element exists + contains something (it's not null)
 	public boolean defined (String a) {
 		return ( map.containsKey(a) && map.get(a)!=null );
 	}
-	
+
 	// returns a reference to the object
 	public T read (String a) {
 		if( map.containsKey(a) )
 			return map.get(a);
 		return null;
 	}
-	
+
 	public Set<String> keys () {
 		return map.keySet();
 	}
-	
+
 	public Collection<T> values () {
 		return map.values();
 	}
-		
+
 	public StringMap1D<T> cloned () {
 		StringMap1D<T> cloned = new StringMap1D<>();
 		for ( String a : this.keys() ) {
@@ -58,35 +58,35 @@ public class StringMap1D<T> {
 		}
 		return cloned;
 	}
-	
+
 	public boolean allNulls () {
 		for ( String a : this.keys() ) {
 			if (map.get(a) != null) return false;
 		}
 		return true;
 	}
-	
+
 	public boolean noNulls () {
 		for ( String a : this.keys() ) {
 			if (map.get(a) == null) return false;
 		}
 		return true;
 	}
-	
+
 	// loop through THIS and overwrite THIS with M (non-null)
 	public StringMap1D<T> update ( StringMap1D<T> m ) {
 		for ( String a : this.keys() )
 			if (m.defined(a)) write(a, m.read(a));
 		return this;
 	}
-	
+
 	// loop through M and overwrite THIS with M (non-null)
 	public StringMap1D<T> merge ( StringMap1D<T> m ) {
 		for ( String a : m.keys() )
 			if (m.defined(a)) write(a, m.read(a));
 		return this;
 	}
-	
+
 	// export a template object of this map (pre-initialize values)
 	public StringMap1D<T> templated (T b) {
 		StringMap1D<T> m = new StringMap1D<>();
@@ -94,7 +94,7 @@ public class StringMap1D<T> {
 			m.write(a, b);
 		return m;
 	}
-	
+
 	// join map values into a delimited string
 	public String join ( String delim ) {
 		String delim_str = "";
@@ -105,12 +105,12 @@ public class StringMap1D<T> {
 		}
 		return output_str;
 	}
-	
+
 	@Override
-	public String toString() { 
-		return toJSON(); 
+	public String toString() {
+		return toJSON();
 	}
-	
+
 	public String toJSON() {
 		String output = "{";
 		String a_comma = "\n";
@@ -126,7 +126,7 @@ public class StringMap1D<T> {
 		}
 		return output+"\n}";
 	}
-	
+
 	public String hash () { // how this is implemented may change
 		if (mapChanged) {
 			hashStr = map.toString();
@@ -136,5 +136,5 @@ public class StringMap1D<T> {
 			return hashStr;
 		}
 	}
-		
+
 }
