@@ -13,7 +13,7 @@ public class StringMap1D<T> {
 	public Map<String, T> map () {
 		return map;
 	}
-	public StringMap1D map ( Map<String, T> m ) {
+	public StringMap1D<T> map ( Map<String, T> m ) {
 		map = m;
 		mapChanged = true;
 		return this;
