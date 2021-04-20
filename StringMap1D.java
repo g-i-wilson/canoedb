@@ -20,10 +20,10 @@ public class StringMap1D<T> {
 	}
 
 	// write
-	public StringMap1D<T> write (String a, T t) {
+	public T write (String a, T t) {
 		map.put(a, t);
 		mapChanged = true;
-		return this;
+		return t;
 	}
 
 	// element exists, but it might be null (all we know is the key is there)
